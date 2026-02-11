@@ -1,0 +1,149 @@
+{
+  "project_name": "XRP Nexus Terminal",
+  "design_philosophy": {
+    "identity": "A high-performance, non-custodial financial terminal for the XRP Ledger.",
+    "emotional_tone": "Institutional, Liquid, Secure, Electric.",
+    "visual_style": "Deep Ocean Dark Mode. Glassmorphism. Neon Blue Data Streams.",
+    "core_metaphor": "The Flow of Value (Liquid & Fast)."
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Rajdhani, sans-serif",
+      "body": "Manrope, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl font-bold tracking-tight",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+      "h3": "text-2xl font-medium tracking-normal",
+      "body_lg": "text-lg leading-relaxed text-slate-300",
+      "body": "text-base leading-relaxed text-slate-400",
+      "caption": "text-sm text-slate-500 uppercase tracking-wider"
+    },
+    "import_instruction": "Import fonts via Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');"
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": {
+        "default": "#020817",
+        "paper": "#0B1221",
+        "subtle": "#1E293B"
+      },
+      "primary": {
+        "main": "#00AEEF",
+        "light": "#33BEF2",
+        "dark": "#007AB8",
+        "glow": "0 0 20px rgba(0, 174, 239, 0.5)"
+      },
+      "secondary": {
+        "main": "#E1E1E1",
+        "dark": "#94A3B8"
+      },
+      "accent": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
+      },
+      "gradient": {
+        "xrp": "linear-gradient(135deg, #00AEEF 0%, #002B5C 100%)",
+        "glass": "linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)"
+      }
+    },
+    "tailwind_config_extension": {
+      "colors": {
+        "xrp": {
+          "blue": "#00AEEF",
+          "navy": "#002B5C",
+          "silver": "#E1E1E1"
+        },
+        "dark": {
+          "bg": "#020817",
+          "card": "#0B1221",
+          "border": "#1E293B"
+        }
+      }
+    }
+  },
+  "visual_enhancers": {
+    "radius": {
+      "default": "rounded-xl",
+      "card": "rounded-2xl",
+      "button": "rounded-lg"
+    },
+    "shadows": {
+      "glow": "0 0 20px -5px rgba(0, 174, 239, 0.3)",
+      "card": "0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)"
+    },
+    "borders": {
+      "glass": "1px solid rgba(255, 255, 255, 0.08)"
+    },
+    "backgrounds": {
+      "main_texture": "url('https://images.unsplash.com/photo-1660836814985-8523a0d713b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGN5YmVyJTIwYmxvY2tjaGFpbiUyMGJsdWUlMjBuZXR3b3JrJTIwYmFja2dyb3VuZCUyMGRhcmt8ZW58MHx8fHwxNzcwODU0MTgyfDA&ixlib=rb-4.1.0&q=85')"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "type": "Bento Grid (Mode B)",
+      "grid_cols": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+      "gap": "gap-6",
+      "padding": "p-6 md:p-8"
+    },
+    "marketing": {
+      "type": "Tetris Grid (Mode A)",
+      "grid_cols": "grid-cols-1 md:grid-cols-12",
+      "gap": "gap-8"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#00AEEF] hover:bg-[#0092CC] text-white font-rajdhani font-semibold tracking-wide shadow-[0_0_15px_rgba(0,174,239,0.3)] transition-all duration-300 hover:scale-[1.02]",
+      "secondary": "bg-[#1E293B] hover:bg-[#334155] text-white font-rajdhani font-medium border border-slate-700",
+      "ghost": "text-slate-400 hover:text-white hover:bg-white/5"
+    },
+    "cards": {
+      "base": "bg-[#0B1221]/80 backdrop-blur-md border border-white/5 shadow-2xl rounded-2xl p-6",
+      "interactive": "hover:border-[#00AEEF]/30 transition-colors duration-300 cursor-pointer"
+    },
+    "inputs": {
+      "base": "bg-[#020817]/50 border-slate-800 focus:border-[#00AEEF] focus:ring-1 focus:ring-[#00AEEF] text-white placeholder:text-slate-600 rounded-lg h-12"
+    }
+  },
+  "assets": {
+    "logos": {
+      "xrp": "https://cryptologos.cc/logos/xrp-xrp-logo.svg?v=025",
+      "btc": "https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=025",
+      "sol": "https://cryptologos.cc/logos/solana-sol-logo.svg?v=025",
+      "eth": "https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=025",
+      "usdt": "https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025",
+      "bnb": "https://cryptologos.cc/logos/bnb-bnb-logo.svg?v=025",
+      "doge": "https://cryptologos.cc/logos/dogecoin-doge-logo.svg?v=025",
+      "ltc": "https://cryptologos.cc/logos/litecoin-ltc-logo.svg?v=025"
+    },
+    "icons_library": "lucide-react"
+  },
+  "accessibility": {
+    "contrast_check": "Ensure #00AEEF text is only used on very dark backgrounds. Use #33BEF2 for smaller text if needed.",
+    "focus_states": "ring-2 ring-[#00AEEF] ring-offset-2 ring-offset-[#020817]"
+  },
+  "instructions_to_main_agent": [
+    "1. Setup: Install Google Fonts (Rajdhani, Manrope) immediately in index.css.",
+    "2. Theme: Enforce dark mode by default. Add 'dark' class to html/body.",
+    "3. Background: Use the provided 'main_texture' URL as a subtle background for the entire app body, with a heavy dark overlay (bg-slate-950/90) to ensure text readability.",
+    "4. Wallet Page: Use a clean list view for assets with their respective logos from the assets list.",
+    "5. Swap Page: Center the swap card. Use a 'glow' effect behind the main container.",
+    "6. Dashboard: Use Recharts for the price chart. Style the lines with #00AEEF (XRP Blue).",
+    "7. Buy Page: Create distinct cards for MoonPay, Mercuryo, and Transak using a generic credit card icon if specific logos are unavailable, or use text labels.",
+    "8. Icons: Use 'lucide-react' for UI icons (Wallet, RefreshCcw, CreditCard, Settings, etc.).",
+    "9. Charts: Use 'recharts' library. Customize tooltips to be dark and minimal.",
+    "10. Connect Wallet: Modal should use the 'glass' gradient background."
+  ],
+  "UNIVERSAL_GUIDELINES": [
+    "Do not use generic gradients. Use the specific XRP gradient defined in colors.",
+    "Every interactive element must have a hover state.",
+    "Use data-testid attributes for all inputs and buttons.",
+    "Keep spacing generous (p-6, p-8) inside cards.",
+    "Avoid pure black (#000000). Use #020817 for backgrounds."
+  ]
+}
