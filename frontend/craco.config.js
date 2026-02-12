@@ -49,7 +49,6 @@ const webpackConfig = {
     },
     configure: (webpackConfig) => {
       // Add polyfills for Node.js core modules (needed for crypto libraries)
-      const webpack = require('webpack');
       webpackConfig.resolve.fallback = {
         ...webpackConfig.resolve.fallback,
         buffer: require.resolve('buffer/'),
