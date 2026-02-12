@@ -1,5 +1,5 @@
 import * as bip39 from 'bip39';
-import { HDKey } from 'hdkey';
+import HDKey from 'hdkey';
 import { deriveKeypair, deriveAddress } from 'ripple-keypairs';
 import { ethers } from 'ethers';
 
