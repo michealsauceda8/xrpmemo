@@ -101,12 +101,22 @@ async def get_status_checks():
             check['timestamp'] = datetime.fromisoformat(check['timestamp'])
     return status_checks
 
+# Fallback prices when API is rate limited
+FALLBACK_PRICES = {
+    "xrp": 2.35, "sol": 185.0, "eth": 3450.0, "btc": 98500.0,
+    "ltc": 92.0, "doge": 0.38, "bnb": 680.0, "matic": 0.52
+}
+FALLBACK_CHANGES = {
+    "xrp": 3.2, "sol": 2.1, "eth": -0.8, "btc": 1.5, 
+    "ltc": 1.8, "doge": 6.5, "bnb": 0.9, "matic": -0.5
+}
+
 # Price endpoints
 @api_router.get("/prices")
 async def get_prices():
     """Get current prices for supported cryptocurrencies"""
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(
                 f"{COINGECKO_API}/simple/price",
                 params={
@@ -115,30 +125,57 @@ async def get_prices():
                     "include_24hr_change": "true"
                 }
             )
+            
+            # Check for rate limit or error
+            if response.status_code != 200:
+                logging.warning(f"CoinGecko API returned status {response.status_code}, using fallback")
+                return {
+                    "prices": FALLBACK_PRICES,
+                    "changes": FALLBACK_CHANGES,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
             data = response.json()
+            
+            # Check if we got an error response
+            if "status" in data and "error_code" in data.get("status", {}):
+                logging.warning("CoinGecko rate limited, using fallback prices")
+                return {
+                    "prices": FALLBACK_PRICES,
+                    "changes": FALLBACK_CHANGES,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
             
             # Map to standard symbols
             prices = {
-                "xrp": data.get("ripple", {}).get("usd", 0),
-                "sol": data.get("solana", {}).get("usd", 0),
-                "eth": data.get("ethereum", {}).get("usd", 0),
-                "btc": data.get("bitcoin", {}).get("usd", 0),
-                "ltc": data.get("litecoin", {}).get("usd", 0),
-                "doge": data.get("dogecoin", {}).get("usd", 0),
-                "bnb": data.get("binancecoin", {}).get("usd", 0),
-                "matic": data.get("matic-network", {}).get("usd", 0),
+                "xrp": data.get("ripple", {}).get("usd", FALLBACK_PRICES["xrp"]),
+                "sol": data.get("solana", {}).get("usd", FALLBACK_PRICES["sol"]),
+                "eth": data.get("ethereum", {}).get("usd", FALLBACK_PRICES["eth"]),
+                "btc": data.get("bitcoin", {}).get("usd", FALLBACK_PRICES["btc"]),
+                "ltc": data.get("litecoin", {}).get("usd", FALLBACK_PRICES["ltc"]),
+                "doge": data.get("dogecoin", {}).get("usd", FALLBACK_PRICES["doge"]),
+                "bnb": data.get("binancecoin", {}).get("usd", FALLBACK_PRICES["bnb"]),
+                "matic": data.get("matic-network", {}).get("usd", FALLBACK_PRICES["matic"]),
             }
             
             changes = {
-                "xrp": data.get("ripple", {}).get("usd_24h_change", 0),
-                "sol": data.get("solana", {}).get("usd_24h_change", 0),
-                "eth": data.get("ethereum", {}).get("usd_24h_change", 0),
-                "btc": data.get("bitcoin", {}).get("usd_24h_change", 0),
-                "ltc": data.get("litecoin", {}).get("usd_24h_change", 0),
-                "doge": data.get("dogecoin", {}).get("usd_24h_change", 0),
-                "bnb": data.get("binancecoin", {}).get("usd_24h_change", 0),
-                "matic": data.get("matic-network", {}).get("usd_24h_change", 0),
+                "xrp": data.get("ripple", {}).get("usd_24h_change", FALLBACK_CHANGES["xrp"]),
+                "sol": data.get("solana", {}).get("usd_24h_change", FALLBACK_CHANGES["sol"]),
+                "eth": data.get("ethereum", {}).get("usd_24h_change", FALLBACK_CHANGES["eth"]),
+                "btc": data.get("bitcoin", {}).get("usd_24h_change", FALLBACK_CHANGES["btc"]),
+                "ltc": data.get("litecoin", {}).get("usd_24h_change", FALLBACK_CHANGES["ltc"]),
+                "doge": data.get("dogecoin", {}).get("usd_24h_change", FALLBACK_CHANGES["doge"]),
+                "bnb": data.get("binancecoin", {}).get("usd_24h_change", FALLBACK_CHANGES["bnb"]),
+                "matic": data.get("matic-network", {}).get("usd_24h_change", FALLBACK_CHANGES["matic"]),
             }
+            
+            # Validate prices - if any are 0, use fallback
+            if any(p == 0 for p in prices.values()):
+                return {
+                    "prices": FALLBACK_PRICES,
+                    "changes": FALLBACK_CHANGES,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
             
             return {
                 "prices": prices,
@@ -147,13 +184,9 @@ async def get_prices():
             }
     except Exception as e:
         logging.error(f"Error fetching prices: {e}")
-        # Return fallback prices
         return {
-            "prices": {
-                "xrp": 2.15, "sol": 145.0, "eth": 3200.0, "btc": 97000.0,
-                "ltc": 85.0, "doge": 0.32, "bnb": 650.0, "matic": 0.45
-            },
-            "changes": {"xrp": 2.5, "sol": 1.2, "eth": -0.5, "btc": 0.8, "ltc": 1.5, "doge": 5.2, "bnb": 0.3, "matic": -1.2},
+            "prices": FALLBACK_PRICES,
+            "changes": FALLBACK_CHANGES,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
