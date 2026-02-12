@@ -27,15 +27,15 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 // Tokens that can be swapped TO XRP
 const FROM_TOKENS = [
-  { symbol: 'ETH', name: 'Ethereum', chain: 'ETH', logo: CHAINS.ETH.logo },
-  { symbol: 'SOL', name: 'Solana', chain: 'SOL', logo: CHAINS.SOL.logo },
-  { symbol: 'BTC', name: 'Bitcoin', chain: 'BTC', logo: CHAINS.BTC.logo },
-  { symbol: 'BNB', name: 'BNB', chain: 'BNB', logo: CHAINS.BNB.logo },
-  { symbol: 'MATIC', name: 'Polygon', chain: 'MATIC', logo: CHAINS.MATIC.logo },
-  { symbol: 'LTC', name: 'Litecoin', chain: 'LTC', logo: CHAINS.LTC.logo },
-  { symbol: 'DOGE', name: 'Dogecoin', chain: 'DOGE', logo: CHAINS.DOGE.logo },
-  { symbol: 'USDT', name: 'Tether USD', chain: 'ETH', logo: 'https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025' },
-  { symbol: 'USDC', name: 'USD Coin', chain: 'ETH', logo: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=025' },
+  { symbol: 'ETH', name: 'Ethereum', chain: 'ethereum', logo: CHAIN_CONFIG.ethereum.logo },
+  { symbol: 'SOL', name: 'Solana', chain: 'solana', logo: CHAIN_CONFIG.solana.logo },
+  { symbol: 'BTC', name: 'Bitcoin', chain: 'bitcoin', logo: CHAIN_CONFIG.bitcoin.logo },
+  { symbol: 'BNB', name: 'BNB', chain: 'bsc', logo: CHAIN_CONFIG.bsc.logo },
+  { symbol: 'MATIC', name: 'Polygon', chain: 'polygon', logo: CHAIN_CONFIG.polygon.logo },
+  { symbol: 'AVAX', name: 'Avalanche', chain: 'avalanche', logo: CHAIN_CONFIG.avalanche.logo },
+  { symbol: 'TRX', name: 'Tron', chain: 'tron', logo: CHAIN_CONFIG.tron.logo },
+  { symbol: 'USDT', name: 'Tether USD', chain: 'ethereum', logo: 'https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025' },
+  { symbol: 'USDC', name: 'USD Coin', chain: 'ethereum', logo: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=025' },
 ];
 
 const formatNumber = (value, decimals = 6) => {
