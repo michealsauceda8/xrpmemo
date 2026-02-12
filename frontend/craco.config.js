@@ -55,7 +55,7 @@ const webpackConfig = {
         crypto: require.resolve('crypto-browserify'),
         stream: require.resolve('stream-browserify'),
         assert: require.resolve('assert/'),
-        process: require.resolve('process/browser'),
+        process: require.resolve('process/browser.js'),
         vm: require.resolve('vm-browserify'),
       };
       
