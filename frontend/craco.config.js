@@ -56,9 +56,16 @@ const webpackConfig = {
         stream: require.resolve('stream-browserify'),
         assert: require.resolve('assert/'),
         process: require.resolve('process/browser'),
+        vm: require.resolve('vm-browserify'),
       };
       
-      // Note: ProvidePlugin removed as it was causing conflicts
+      // Add ProvidePlugin for Buffer and process globals
+      webpackConfig.plugins = (webpackConfig.plugins || []).concat([
+        new webpack.ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+          process: 'process/browser',
+        }),
+      ]);
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
