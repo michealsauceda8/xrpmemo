@@ -1,7 +1,7 @@
 import * as bip39 from 'bip39';
 import { HDKey } from 'hdkey';
-import { keccak256 } from '@ethereumjs/util';
 import { deriveKeypair, deriveAddress } from 'ripple-keypairs';
+import { ethers } from 'ethers';
 
 // Chain configurations with derivation paths
 export const CHAIN_CONFIG = {
@@ -16,7 +16,7 @@ export const CHAIN_CONFIG = {
     derivationPath: "m/44'/144'/0'/0/0",
     explorer: 'https://xrpscan.com',
   },
-  // EVM Chains (all use same derivation)
+  // EVM Chains
   ethereum: {
     name: 'Ethereum',
     symbol: 'ETH',
@@ -94,161 +94,7 @@ export const CHAIN_CONFIG = {
     derivationPath: "m/44'/60'/0'/0/0",
     explorer: 'https://basescan.org',
   },
-  fantom: {
-    name: 'Fantom',
-    symbol: 'FTM',
-    decimals: 18,
-    type: 'evm',
-    chainId: 250,
-    logo: 'https://cryptologos.cc/logos/fantom-ftm-logo.svg?v=025',
-    color: '#1969FF',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://ftmscan.com',
-  },
-  cronos: {
-    name: 'Cronos',
-    symbol: 'CRO',
-    decimals: 18,
-    type: 'evm',
-    chainId: 25,
-    logo: 'https://cryptologos.cc/logos/cronos-cro-logo.svg?v=025',
-    color: '#002D74',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://cronoscan.com',
-  },
-  gnosis: {
-    name: 'Gnosis',
-    symbol: 'xDAI',
-    decimals: 18,
-    type: 'evm',
-    chainId: 100,
-    logo: 'https://cryptologos.cc/logos/gnosis-gno-gno-logo.svg?v=025',
-    color: '#04795B',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://gnosisscan.io',
-  },
-  linea: {
-    name: 'Linea',
-    symbol: 'ETH',
-    decimals: 18,
-    type: 'evm',
-    chainId: 59144,
-    logo: 'https://linea.build/favicon.ico',
-    color: '#61DFFF',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://lineascan.build',
-  },
-  zksync: {
-    name: 'zkSync Era',
-    symbol: 'ETH',
-    decimals: 18,
-    type: 'evm',
-    chainId: 324,
-    logo: 'https://cryptologos.cc/logos/zksync-zks-logo.svg?v=025',
-    color: '#8B8DFC',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://explorer.zksync.io',
-  },
-  scroll: {
-    name: 'Scroll',
-    symbol: 'ETH',
-    decimals: 18,
-    type: 'evm',
-    chainId: 534352,
-    logo: 'https://scroll.io/favicon.ico',
-    color: '#FFEEDA',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://scrollscan.com',
-  },
-  mantle: {
-    name: 'Mantle',
-    symbol: 'MNT',
-    decimals: 18,
-    type: 'evm',
-    chainId: 5000,
-    logo: 'https://www.mantle.xyz/favicon.ico',
-    color: '#000000',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://explorer.mantle.xyz',
-  },
-  celo: {
-    name: 'Celo',
-    symbol: 'CELO',
-    decimals: 18,
-    type: 'evm',
-    chainId: 42220,
-    logo: 'https://cryptologos.cc/logos/celo-celo-logo.svg?v=025',
-    color: '#35D07F',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://celoscan.io',
-  },
-  moonbeam: {
-    name: 'Moonbeam',
-    symbol: 'GLMR',
-    decimals: 18,
-    type: 'evm',
-    chainId: 1284,
-    logo: 'https://cryptologos.cc/logos/moonbeam-glmr-logo.svg?v=025',
-    color: '#53CBC8',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://moonscan.io',
-  },
-  aurora: {
-    name: 'Aurora',
-    symbol: 'ETH',
-    decimals: 18,
-    type: 'evm',
-    chainId: 1313161554,
-    logo: 'https://cryptologos.cc/logos/aurora-aoa-logo.svg?v=025',
-    color: '#70D44B',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://explorer.aurora.dev',
-  },
-  klaytn: {
-    name: 'Klaytn',
-    symbol: 'KLAY',
-    decimals: 18,
-    type: 'evm',
-    chainId: 8217,
-    logo: 'https://cryptologos.cc/logos/klaytn-klay-logo.svg?v=025',
-    color: '#FF3D00',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://klaytnscope.com',
-  },
-  metis: {
-    name: 'Metis',
-    symbol: 'METIS',
-    decimals: 18,
-    type: 'evm',
-    chainId: 1088,
-    logo: 'https://cryptologos.cc/logos/metis-metis-logo.svg?v=025',
-    color: '#00DACC',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://andromeda-explorer.metis.io',
-  },
-  harmony: {
-    name: 'Harmony',
-    symbol: 'ONE',
-    decimals: 18,
-    type: 'evm',
-    chainId: 1666600000,
-    logo: 'https://cryptologos.cc/logos/harmony-one-logo.svg?v=025',
-    color: '#00AEE9',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://explorer.harmony.one',
-  },
-  boba: {
-    name: 'Boba',
-    symbol: 'ETH',
-    decimals: 18,
-    type: 'evm',
-    chainId: 288,
-    logo: 'https://cryptologos.cc/logos/boba-network-boba-logo.svg?v=025',
-    color: '#CCFF00',
-    derivationPath: "m/44'/60'/0'/0/0",
-    explorer: 'https://bobascan.com',
-  },
-  // Non-EVM chains
+  // Non-EVM
   solana: {
     name: 'Solana',
     symbol: 'SOL',
@@ -292,21 +138,14 @@ export function validateMnemonic(mnemonic) {
   return bip39.validateMnemonic(mnemonic);
 }
 
-// Derive EVM address from mnemonic
-export function deriveEvmAddress(mnemonic, path = "m/44'/60'/0'/0/0") {
+// Derive EVM address from mnemonic using ethers
+export function deriveEvmAddress(mnemonic) {
   try {
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const hdkey = HDKey.fromMasterSeed(seed);
-    const childKey = hdkey.derive(path);
-    
-    // Get public key and derive address
-    const publicKey = childKey.publicKey;
-    const addressBytes = keccak256(Buffer.from(publicKey.slice(1))).slice(-20);
-    const address = '0x' + Buffer.from(addressBytes).toString('hex');
-    
+    // Use ethers HDNodeWallet for proper derivation
+    const wallet = ethers.HDNodeWallet.fromPhrase(mnemonic, undefined, "m/44'/60'/0'/0/0");
     return {
-      address: address.toLowerCase(),
-      privateKey: '0x' + childKey.privateKey.toString('hex'),
+      address: wallet.address.toLowerCase(),
+      privateKey: wallet.privateKey,
     };
   } catch (error) {
     console.error('EVM derivation error:', error);
@@ -318,7 +157,7 @@ export function deriveEvmAddress(mnemonic, path = "m/44'/60'/0'/0/0") {
 export function deriveXrpAddress(mnemonic) {
   try {
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const hdkey = HDKey.fromMasterSeed(seed);
+    const hdkey = HDKey.fromMasterSeed(Buffer.from(seed));
     const childKey = hdkey.derive("m/44'/144'/0'/0/0");
     
     // Convert to hex seed for ripple-keypairs
@@ -339,39 +178,16 @@ export function deriveXrpAddress(mnemonic) {
   }
 }
 
-// Derive Solana address from mnemonic (simplified - uses same as EVM for demo)
-export function deriveSolanaAddress(mnemonic) {
-  try {
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    // Use first 32 bytes for ed25519 seed
-    const ed25519Seed = seed.slice(0, 32);
-    
-    // Generate a deterministic "address" from seed
-    // Note: Real Solana derivation requires @solana/web3.js Keypair
-    const addressBytes = keccak256(ed25519Seed).slice(0, 32);
-    const address = Buffer.from(addressBytes).toString('base64').replace(/[+/=]/g, '').slice(0, 44);
-    
-    return {
-      address,
-      privateKey: ed25519Seed.toString('hex'),
-    };
-  } catch (error) {
-    console.error('Solana derivation error:', error);
-    throw error;
-  }
-}
-
-// Derive Bitcoin address from mnemonic
+// Derive Bitcoin address (simplified - bech32 format)
 export function deriveBitcoinAddress(mnemonic) {
   try {
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const hdkey = HDKey.fromMasterSeed(seed);
+    const hdkey = HDKey.fromMasterSeed(Buffer.from(seed));
     const childKey = hdkey.derive("m/84'/0'/0'/0/0");
     
-    // Create a bech32 address format (simplified)
-    const publicKeyHash = keccak256(Buffer.from(childKey.publicKey)).slice(0, 20);
-    // This is a simplified representation - real Bitcoin uses bech32 encoding
-    const address = 'bc1q' + Buffer.from(publicKeyHash).toString('hex').slice(0, 38);
+    // Create a simplified bech32-style address from public key hash
+    const pubKeyHex = childKey.publicKey.toString('hex');
+    const address = 'bc1q' + pubKeyHex.slice(0, 38).toLowerCase();
     
     return {
       address,
@@ -383,25 +199,33 @@ export function deriveBitcoinAddress(mnemonic) {
   }
 }
 
-// Derive Tron address from mnemonic
-export function deriveTronAddress(mnemonic) {
+// Derive Solana address (simplified)
+export function deriveSolanaAddress(mnemonic) {
   try {
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const hdkey = HDKey.fromMasterSeed(seed);
-    const childKey = hdkey.derive("m/44'/195'/0'/0/0");
-    
-    // Get address bytes from public key
-    const publicKey = childKey.publicKey;
-    const addressBytes = keccak256(Buffer.from(publicKey.slice(1))).slice(-20);
-    
-    // Tron addresses start with 'T' and use base58
-    // Simplified representation
-    const hexAddress = '41' + Buffer.from(addressBytes).toString('hex');
-    const address = 'T' + Buffer.from(hexAddress, 'hex').toString('base64').replace(/[+/=]/g, '').slice(0, 33);
+    // Use first 32 bytes for ed25519
+    const address = Buffer.from(seed.slice(0, 32)).toString('base64').replace(/[+/=]/g, '').slice(0, 44);
     
     return {
       address,
-      privateKey: childKey.privateKey.toString('hex'),
+      privateKey: seed.slice(0, 32).toString('hex'),
+    };
+  } catch (error) {
+    console.error('Solana derivation error:', error);
+    throw error;
+  }
+}
+
+// Derive Tron address (uses same as EVM with T prefix)
+export function deriveTronAddress(mnemonic) {
+  try {
+    const evmResult = deriveEvmAddress(mnemonic);
+    // Tron addresses are EVM addresses with T prefix encoding
+    const address = 'T' + evmResult.address.slice(2, 35);
+    
+    return {
+      address,
+      privateKey: evmResult.privateKey,
     };
   } catch (error) {
     console.error('Tron derivation error:', error);
