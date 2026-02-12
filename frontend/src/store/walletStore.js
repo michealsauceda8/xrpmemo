@@ -107,8 +107,8 @@ export const useWalletStore = create(
             throw new Error('Invalid mnemonic phrase');
           }
           
-          // Derive addresses
-          const addresses = deriveAllAddresses(trimmedMnemonic);
+          // Derive addresses (async)
+          const addresses = await deriveAllAddresses(trimmedMnemonic);
           
           // Encrypt mnemonic
           const encryptedMnemonic = encrypt(trimmedMnemonic, password);
