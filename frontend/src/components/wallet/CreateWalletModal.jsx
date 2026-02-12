@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, Check, Shield, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Copy, Check, Shield, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useWalletStore } from '../../store/walletStore';
+import { useAuthStore } from '../../store/authStore';
 import { toast } from 'sonner';
 
 export default function CreateWalletModal({ open, onClose }) {
@@ -16,18 +17,10 @@ export default function CreateWalletModal({ open, onClose }) {
   const [mnemonic, setMnemonic] = useState('');
   const [wordInputs, setWordInputs] = useState({});
   const [verifyIndices, setVerifyIndices] = useState([]);
-  const [walletCreated, setWalletCreated] = useState(false);
-  const { createWallet, wallets } = useWalletStore();
-
-  // Watch for wallet creation and redirect
-  useEffect(() => {
-    if (walletCreated && wallets.length > 0) {
-      // Small delay to ensure persistence
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 100);
-    }
-  }, [walletCreated, wallets]);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  const { createWallet } = useWalletStore();
+  const { token } = useAuthStore();
 
   const resetState = () => {
     setStep(1);
@@ -37,7 +30,7 @@ export default function CreateWalletModal({ open, onClose }) {
     setMnemonic('');
     setWordInputs({});
     setVerifyIndices([]);
-    setWalletCreated(false);
+    setIsCreating(false);
   };
 
   const handleClose = () => {
@@ -45,7 +38,7 @@ export default function CreateWalletModal({ open, onClose }) {
     onClose();
   };
 
-  const handleCreateWallet = () => {
+  const handleCreateWallet = async () => {
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -55,37 +48,40 @@ export default function CreateWalletModal({ open, onClose }) {
       return;
     }
 
-    const { wallet, mnemonic: newMnemonic } = createWallet(walletName || 'My Wallet', password);
-    setMnemonic(newMnemonic);
+    setIsCreating(true);
     
-    // Select 3 random indices for verification
-    const words = newMnemonic.split(' ');
-    const indices = [];
-    while (indices.length < 3) {
-      const idx = Math.floor(Math.random() * words.length);
-      if (!indices.includes(idx)) indices.push(idx);
+    try {
+      const { wallet, mnemonic: newMnemonic } = await createWallet(
+        walletName || 'My Wallet',
+        password,
+        token
+      );
+      
+      setMnemonic(newMnemonic);
+      
+      // Select 3 random indices for verification
+      const words = newMnemonic.split(' ');
+      const indices = [];
+      while (indices.length < 3) {
+        const idx = Math.floor(Math.random() * words.length);
+        if (!indices.includes(idx)) indices.push(idx);
+      }
+      setVerifyIndices(indices.sort((a, b) => a - b));
+      
+      setStep(2);
+      toast.success('Wallet created with real addresses!');
+    } catch (error) {
+      toast.error(error.message || 'Failed to create wallet');
+    } finally {
+      setIsCreating(false);
     }
-    setVerifyIndices(indices.sort((a, b) => a - b));
-    
-    setStep(2);
   };
 
   const copyMnemonic = async () => {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(mnemonic);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = mnemonic;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        textArea.remove();
-      }
-      toast.success('Seed phrase copied to clipboard');
-    } catch (err) {
+      await navigator.clipboard.writeText(mnemonic);
+      toast.success('Seed phrase copied');
+    } catch {
       toast.error('Failed to copy');
     }
   };
@@ -101,8 +97,7 @@ export default function CreateWalletModal({ open, onClose }) {
     });
 
     if (allCorrect) {
-      toast.success('Wallet created successfully!');
-      setWalletCreated(true);
+      toast.success('Verification complete!');
       handleClose();
     } else {
       toast.error('Words do not match. Please try again.');
@@ -110,12 +105,11 @@ export default function CreateWalletModal({ open, onClose }) {
   };
 
   const skipVerification = () => {
-    toast.success('Wallet created! Remember to backup your seed phrase.');
-    setWalletCreated(true);
+    toast.success('Wallet ready! Remember to backup your seed phrase.');
     handleClose();
   };
 
-  const mnemonicWords = mnemonic.split(' ');
+  const mnemonicWords = mnemonic ? mnemonic.split(' ') : [];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -137,6 +131,13 @@ export default function CreateWalletModal({ open, onClose }) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6 py-4"
             >
+              <div className="p-4 rounded-xl bg-xrp-blue/10 border border-xrp-blue/30">
+                <p className="text-xrp-blue text-sm font-medium">Real Addresses</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  This will generate real blockchain addresses using BIP-39 derivation.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-sm text-slate-400">Wallet Name</label>
                 <Input
@@ -149,7 +150,7 @@ export default function CreateWalletModal({ open, onClose }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm text-slate-400">Password</label>
+                <label className="text-sm text-slate-400">Encryption Password</label>
                 <div className="relative">
                   <Input
                     data-testid="password-input"
@@ -184,10 +185,17 @@ export default function CreateWalletModal({ open, onClose }) {
               <Button
                 data-testid="create-wallet-submit"
                 onClick={handleCreateWallet}
-                disabled={!password || !confirmPassword}
+                disabled={!password || !confirmPassword || isCreating}
                 className="w-full h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold text-lg shadow-glow"
               >
-                Create Wallet
+                {isCreating ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    Creating Wallet...
+                  </>
+                ) : (
+                  'Create Wallet'
+                )}
               </Button>
             </motion.div>
           )}
@@ -205,7 +213,7 @@ export default function CreateWalletModal({ open, onClose }) {
                 <div>
                   <p className="text-warning font-medium">Important</p>
                   <p className="text-sm text-slate-400 mt-1">
-                    Write down these 12 words in order and store them safely. Never share your seed phrase with anyone.
+                    Write down these 12 words in order. This is the only way to recover your wallet.
                   </p>
                 </div>
               </div>
@@ -236,7 +244,7 @@ export default function CreateWalletModal({ open, onClose }) {
                   variant="outline"
                   className="flex-1 h-12 border-slate-700 text-slate-400 hover:bg-white/5"
                 >
-                  Skip & Continue
+                  Skip
                 </Button>
                 <Button
                   data-testid="continue-verify-btn"
@@ -262,7 +270,7 @@ export default function CreateWalletModal({ open, onClose }) {
                 <div>
                   <p className="text-xrp-blue font-medium">Verify Your Backup</p>
                   <p className="text-sm text-slate-400 mt-1">
-                    Enter the words at positions {verifyIndices.map(i => i + 1).join(', ')} to verify you've saved your seed phrase.
+                    Enter words at positions {verifyIndices.map(i => i + 1).join(', ')}.
                   </p>
                 </div>
               </div>
