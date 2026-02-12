@@ -6,15 +6,16 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useWalletStore } from '../../store/walletStore';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function CreateWalletModal({ open, onClose }) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [walletName, setWalletName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [mnemonic, setMnemonic] = useState('');
-  const [confirmedWords, setConfirmedWords] = useState([]);
   const [wordInputs, setWordInputs] = useState({});
   const [verifyIndices, setVerifyIndices] = useState([]);
   const { createWallet } = useWalletStore();
@@ -25,7 +26,6 @@ export default function CreateWalletModal({ open, onClose }) {
     setPassword('');
     setConfirmPassword('');
     setMnemonic('');
-    setConfirmedWords([]);
     setWordInputs({});
     setVerifyIndices([]);
   };
@@ -60,9 +60,22 @@ export default function CreateWalletModal({ open, onClose }) {
     setStep(2);
   };
 
-  const handleCopyMnemonic = () => {
-    navigator.clipboard.writeText(mnemonic);
-    toast.success('Seed phrase copied to clipboard');
+  const copyMnemonic = async () => {
+    try {
+      await navigator.clipboard.writeText(mnemonic);
+      toast.success('Seed phrase copied to clipboard');
+    } catch (err) {
+      // Fallback
+      const textArea = document.createElement('textarea');
+      textArea.value = mnemonic;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      textArea.remove();
+      toast.success('Seed phrase copied to clipboard');
+    }
   };
 
   const handleVerifyWords = () => {
@@ -78,9 +91,16 @@ export default function CreateWalletModal({ open, onClose }) {
     if (allCorrect) {
       toast.success('Wallet created successfully!');
       handleClose();
+      navigate('/dashboard');
     } else {
       toast.error('Words do not match. Please try again.');
     }
+  };
+
+  const skipVerification = () => {
+    toast.success('Wallet created! Remember to backup your seed phrase.');
+    handleClose();
+    navigate('/dashboard');
   };
 
   const mnemonicWords = mnemonic.split(' ');
@@ -189,7 +209,7 @@ export default function CreateWalletModal({ open, onClose }) {
 
               <Button
                 data-testid="copy-mnemonic-btn"
-                onClick={handleCopyMnemonic}
+                onClick={copyMnemonic}
                 variant="outline"
                 className="w-full h-12 border-slate-700 text-slate-300 hover:bg-white/5"
               >
@@ -197,13 +217,23 @@ export default function CreateWalletModal({ open, onClose }) {
                 Copy Seed Phrase
               </Button>
 
-              <Button
-                data-testid="continue-verify-btn"
-                onClick={() => setStep(3)}
-                className="w-full h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold text-lg shadow-glow"
-              >
-                I've Saved It
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  data-testid="skip-verify-btn"
+                  onClick={skipVerification}
+                  variant="outline"
+                  className="flex-1 h-12 border-slate-700 text-slate-400 hover:bg-white/5"
+                >
+                  Skip
+                </Button>
+                <Button
+                  data-testid="continue-verify-btn"
+                  onClick={() => setStep(3)}
+                  className="flex-1 h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold shadow-glow"
+                >
+                  Verify Backup
+                </Button>
+              </div>
             </motion.div>
           )}
 
@@ -240,13 +270,22 @@ export default function CreateWalletModal({ open, onClose }) {
                 ))}
               </div>
 
-              <Button
-                data-testid="verify-mnemonic-btn"
-                onClick={handleVerifyWords}
-                className="w-full h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold text-lg shadow-glow"
-              >
-                Verify & Complete
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setStep(2)}
+                  variant="outline"
+                  className="flex-1 h-12 border-slate-700 text-slate-400 hover:bg-white/5"
+                >
+                  Back
+                </Button>
+                <Button
+                  data-testid="verify-mnemonic-btn"
+                  onClick={handleVerifyWords}
+                  className="flex-1 h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold shadow-glow"
+                >
+                  Verify & Complete
+                </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
