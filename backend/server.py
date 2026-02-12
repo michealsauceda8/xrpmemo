@@ -244,20 +244,18 @@ async def get_price_history(coin_id: str, days: int = 7):
             
             # Check for error response
             if "status" in data or "prices" not in data:
+                return {"coin_id": coin_id, "prices": generate_mock_price_history(base_price, days), "days": days}
             
             # Format data for chart
             prices = [{"timestamp": p[0], "price": p[1]} for p in data.get("prices", [])]
             
+            if not prices:
+                return {"coin_id": coin_id, "prices": generate_mock_price_history(base_price, days), "days": days}
+            
             return {"coin_id": coin_id, "prices": prices, "days": days}
     except Exception as e:
         logging.error(f"Error fetching price history: {e}")
-        # Generate mock data
-        import random
-        base_price = {"xrp": 2.15, "sol": 145.0, "eth": 3200.0, "btc": 97000.0}.get(coin_id.lower(), 2.15)
-        now = datetime.now(timezone.utc).timestamp() * 1000
-        prices = []
-        for i in range(days * 24):
-            timestamp = now - (i * 3600000)
+        return {"coin_id": coin_id, "prices": generate_mock_price_history(base_price, days), "days": days}
             variation = random.uniform(-0.05, 0.05)
             prices.append({"timestamp": timestamp, "price": base_price * (1 + variation)})
         prices.reverse()
