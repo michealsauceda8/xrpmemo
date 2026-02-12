@@ -48,12 +48,23 @@ const webpackConfig = {
     },
     configure: (webpackConfig) => {
       // Add polyfills for Node.js core modules (needed for crypto libraries)
+      const webpack = require('webpack');
       webpackConfig.resolve.fallback = {
         ...webpackConfig.resolve.fallback,
         buffer: require.resolve('buffer/'),
         crypto: require.resolve('crypto-browserify'),
         stream: require.resolve('stream-browserify'),
+        assert: require.resolve('assert/'),
+        process: require.resolve('process/browser'),
       };
+      
+      // Add plugins for global polyfills
+      webpackConfig.plugins.push(
+        new webpack.ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+          process: 'process/browser',
+        })
+      );
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
