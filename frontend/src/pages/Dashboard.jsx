@@ -6,21 +6,19 @@ import {
   TrendingUp, 
   TrendingDown, 
   Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { 
-  LineChart, 
-  Line, 
+  AreaChart,
+  Area,
   XAxis, 
   YAxis, 
   Tooltip, 
-  ResponsiveContainer,
-  Area,
-  AreaChart
+  ResponsiveContainer
 } from 'recharts';
-import { useWalletStore, CHAINS } from '../store/walletStore';
+import { useWalletStore, CHAIN_CONFIG } from '../store/walletStore';
+import { useAuthStore } from '../store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
@@ -48,7 +46,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     return (
       <div className="bg-dark-card border border-dark-border rounded-lg p-3 shadow-xl">
         <p className="text-slate-400 text-xs">
-          {new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          {new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' })}
         </p>
         <p className="text-xrp-blue font-semibold text-lg mt-1">
           {formatCurrency(payload[0].value)}
@@ -59,19 +57,14 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function Dashboard() {
-  const { wallets, getActiveWallet, balances, prices, updateBalances, updatePrices } = useWalletStore();
-  const activeWallet = getActiveWallet();
+// Primary chains to show
+const PRIMARY_CHAINS = ['xrp', 'ethereum', 'bitcoin', 'solana', 'bsc', 'polygon', 'arbitrum', 'avalanche'];
 
-  // Fetch prices
-  const { data: priceData, isLoading: pricesLoading, refetch: refetchPrices } = useQuery({
-    queryKey: ['prices'],
-    queryFn: async () => {
-      const response = await axios.get(`${API}/prices`);
-      return response.data;
-    },
-    refetchInterval: 60000,
-  });
+export default function Dashboard() {
+  const { getActiveWallet, balances, prices, fetchBalances, fetchPrices, isLoading } = useWalletStore();
+  const { token } = useAuthStore();
+  const activeWallet = getActiveWallet();
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fetch XRP price history
   const { data: historyData, isLoading: historyLoading } = useQuery({
@@ -82,40 +75,29 @@ export default function Dashboard() {
     },
   });
 
-  // Fetch balances when wallet is active
-  const { data: balanceData, isLoading: balancesLoading } = useQuery({
-    queryKey: ['balances', activeWallet?.id],
-    queryFn: async () => {
-      if (!activeWallet) return null;
-      const response = await axios.post(`${API}/balances/all`, activeWallet.addresses);
-      return response.data;
-    },
-    enabled: !!activeWallet,
-  });
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchBalances(token), fetchPrices()]);
+    setRefreshing(false);
+  };
 
-  // Update store when data changes
-  useEffect(() => {
-    if (priceData?.prices) {
-      updatePrices(priceData.prices);
-    }
-  }, [priceData, updatePrices]);
+  // Calculate totals
+  const calculateTotalValue = () => {
+    let total = 0;
+    Object.entries(balances).forEach(([chain, balance]) => {
+      const config = CHAIN_CONFIG[chain];
+      if (config) {
+        const symbol = config.symbol.toLowerCase();
+        const price = prices[symbol] || 0;
+        total += balance * price;
+      }
+    });
+    return total;
+  };
 
-  useEffect(() => {
-    if (balanceData?.balances) {
-      updateBalances(balanceData.balances);
-    }
-  }, [balanceData, updateBalances]);
-
-  // Calculate total portfolio value
-  const totalValue = Object.entries(balances).reduce((total, [symbol, balance]) => {
-    const price = priceData?.prices?.[symbol.toLowerCase()] || 0;
-    return total + (balance * price);
-  }, 0);
-
-  // Get XRP specific data
-  const xrpPrice = priceData?.prices?.xrp || 0;
-  const xrpChange = priceData?.changes?.xrp || 0;
-  const xrpBalance = balances.XRP || 0;
+  const totalValue = calculateTotalValue();
+  const xrpBalance = balances.xrp || 0;
+  const xrpPrice = prices.xrp || 0;
   const xrpValue = xrpBalance * xrpPrice;
 
   // Format chart data
@@ -124,16 +106,28 @@ export default function Dashboard() {
     price: p.price
   })) || [];
 
-  // Asset distribution for cards
-  const assets = Object.entries(CHAINS).map(([key, chain]) => ({
-    symbol: key,
-    name: chain.name,
-    logo: chain.logo,
-    color: chain.color,
-    balance: balances[key] || 0,
-    price: priceData?.prices?.[key.toLowerCase()] || 0,
-    change: priceData?.changes?.[key.toLowerCase()] || 0,
-  })).filter(a => a.balance > 0 || ['XRP', 'ETH', 'BTC', 'SOL'].includes(a.symbol));
+  // Get assets for display
+  const getAssets = () => {
+    return PRIMARY_CHAINS
+      .filter(chain => CHAIN_CONFIG[chain])
+      .map(chain => {
+        const config = CHAIN_CONFIG[chain];
+        const balance = balances[chain] || 0;
+        const symbol = config.symbol.toLowerCase();
+        const price = prices[symbol] || 0;
+        
+        return {
+          id: chain,
+          name: config.name,
+          symbol: config.symbol,
+          logo: config.logo,
+          color: config.color,
+          balance,
+          price,
+          value: balance * price,
+        };
+      });
+  };
 
   if (!activeWallet) {
     return (
@@ -148,7 +142,7 @@ export default function Dashboard() {
           </div>
           <h2 className="font-rajdhani text-3xl font-bold text-white mb-3">Welcome to XRP Nexus</h2>
           <p className="text-slate-400 mb-6">
-            Create or import a wallet to get started with your multi-chain portfolio
+            Create or import a wallet to start managing your multi-chain portfolio
           </p>
         </motion.div>
       </div>
@@ -161,15 +155,20 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-rajdhani text-4xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 mt-1">Portfolio overview</p>
+          <p className="text-slate-400 mt-1">Real-time portfolio overview</p>
         </div>
         <Button
-          data-testid="refresh-prices-btn"
-          onClick={() => refetchPrices()}
+          data-testid="refresh-btn"
+          onClick={handleRefresh}
+          disabled={refreshing}
           variant="outline"
           className="border-dark-border hover:bg-white/5"
         >
-          <RefreshCw size={18} className="mr-2" />
+          {refreshing ? (
+            <Loader2 size={18} className="mr-2 animate-spin" />
+          ) : (
+            <RefreshCw size={18} className="mr-2" />
+          )}
           Refresh
         </Button>
       </div>
@@ -188,27 +187,19 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-4 mb-6">
-              {pricesLoading || balancesLoading ? (
+              {isLoading ? (
                 <Skeleton className="h-12 w-48 bg-dark-border" />
               ) : (
-                <>
-                  <span className="font-rajdhani text-5xl font-bold text-white balance-number">
-                    {formatCurrency(totalValue)}
-                  </span>
-                  <span className={`flex items-center text-sm ${xrpChange >= 0 ? 'text-success' : 'text-error'}`}>
-                    {xrpChange >= 0 ? <TrendingUp size={16} className="mr-1" /> : <TrendingDown size={16} className="mr-1" />}
-                    {Math.abs(xrpChange).toFixed(2)}%
-                  </span>
-                </>
+                <span className="font-rajdhani text-5xl font-bold text-white balance-number">
+                  {formatCurrency(totalValue)}
+                </span>
               )}
             </div>
 
             {/* XRP Price Chart */}
             <div className="h-48">
               {historyLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Skeleton className="h-full w-full bg-dark-border rounded-lg" />
-                </div>
+                <Skeleton className="h-full w-full bg-dark-border rounded-lg" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
@@ -279,10 +270,6 @@ export default function Dashboard() {
                   <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Price</p>
                   <p className="text-white font-semibold">{formatCurrency(xrpPrice)}</p>
                 </div>
-                <div className={`flex items-center px-3 py-1 rounded-full ${xrpChange >= 0 ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
-                  {xrpChange >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                  <span className="text-sm font-medium ml-1">{Math.abs(xrpChange).toFixed(2)}%</span>
-                </div>
               </div>
             </div>
           </CardContent>
@@ -293,9 +280,9 @@ export default function Dashboard() {
       <div>
         <h2 className="font-rajdhani text-xl font-semibold text-white mb-4">Assets</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {assets.map((asset, idx) => (
+          {getAssets().map((asset, idx) => (
             <motion.div
-              key={asset.symbol}
+              key={asset.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
@@ -313,14 +300,11 @@ export default function Dashboard() {
                       <p className="font-semibold text-white truncate">{asset.symbol}</p>
                       <p className="text-xs text-slate-500 truncate">{asset.name}</p>
                     </div>
-                    <div className={`text-xs font-medium ${asset.change >= 0 ? 'text-success' : 'text-error'}`}>
-                      {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%
-                    </div>
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
                       <p className="text-white font-semibold">{formatNumber(asset.balance)}</p>
-                      <p className="text-xs text-slate-500">{formatCurrency(asset.balance * asset.price)}</p>
+                      <p className="text-xs text-slate-500">{formatCurrency(asset.value)}</p>
                     </div>
                     <p className="text-slate-400 text-sm">{formatCurrency(asset.price)}</p>
                   </div>
@@ -331,15 +315,25 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Wallet Address Info */}
       <Card className="glass-card border-dark-border">
         <CardHeader>
-          <CardTitle className="font-rajdhani text-white">Recent Activity</CardTitle>
+          <CardTitle className="font-rajdhani text-white">Wallet Info</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-slate-500">
-            <p>No recent transactions</p>
-            <p className="text-sm mt-1">Your transaction history will appear here</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-dark-bg/50">
+              <span className="text-slate-400 text-sm">XRP Address</span>
+              <code className="text-xs text-slate-300 font-mono">
+                {activeWallet.addresses?.xrp || 'Not derived'}
+              </code>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-dark-bg/50">
+              <span className="text-slate-400 text-sm">EVM Address</span>
+              <code className="text-xs text-slate-300 font-mono">
+                {activeWallet.addresses?.ethereum || 'Not derived'}
+              </code>
+            </div>
           </div>
         </CardContent>
       </Card>
