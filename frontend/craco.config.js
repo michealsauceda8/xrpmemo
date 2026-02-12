@@ -56,6 +56,7 @@ const webpackConfig = {
         stream: require.resolve('stream-browserify'),
         assert: require.resolve('assert/'),
         vm: require.resolve('vm-browserify'),
+        process: require.resolve('process/browser.js'),
       };
       
       // Handle fullySpecified issue for ESM modules
@@ -65,6 +66,14 @@ const webpackConfig = {
           fullySpecified: false,
         },
       });
+      
+      // Add ProvidePlugin for globals - must use resolved path for process
+      webpackConfig.plugins.push(
+        new webpack.ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+          process: require.resolve('process/browser.js'),
+        })
+      );
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
