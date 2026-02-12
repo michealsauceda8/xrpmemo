@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, Check, Shield, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -6,10 +6,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useWalletStore } from '../../store/walletStore';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 export default function CreateWalletModal({ open, onClose }) {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [walletName, setWalletName] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +16,18 @@ export default function CreateWalletModal({ open, onClose }) {
   const [mnemonic, setMnemonic] = useState('');
   const [wordInputs, setWordInputs] = useState({});
   const [verifyIndices, setVerifyIndices] = useState([]);
-  const { createWallet } = useWalletStore();
+  const [walletCreated, setWalletCreated] = useState(false);
+  const { createWallet, wallets } = useWalletStore();
+
+  // Watch for wallet creation and redirect
+  useEffect(() => {
+    if (walletCreated && wallets.length > 0) {
+      // Small delay to ensure persistence
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
+    }
+  }, [walletCreated, wallets]);
 
   const resetState = () => {
     setStep(1);
@@ -28,6 +37,7 @@ export default function CreateWalletModal({ open, onClose }) {
     setMnemonic('');
     setWordInputs({});
     setVerifyIndices([]);
+    setWalletCreated(false);
   };
 
   const handleClose = () => {
@@ -62,19 +72,21 @@ export default function CreateWalletModal({ open, onClose }) {
 
   const copyMnemonic = async () => {
     try {
-      await navigator.clipboard.writeText(mnemonic);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(mnemonic);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = mnemonic;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
       toast.success('Seed phrase copied to clipboard');
     } catch (err) {
-      // Fallback
-      const textArea = document.createElement('textarea');
-      textArea.value = mnemonic;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      textArea.remove();
-      toast.success('Seed phrase copied to clipboard');
+      toast.error('Failed to copy');
     }
   };
 
@@ -90,8 +102,8 @@ export default function CreateWalletModal({ open, onClose }) {
 
     if (allCorrect) {
       toast.success('Wallet created successfully!');
+      setWalletCreated(true);
       handleClose();
-      navigate('/dashboard');
     } else {
       toast.error('Words do not match. Please try again.');
     }
@@ -99,8 +111,8 @@ export default function CreateWalletModal({ open, onClose }) {
 
   const skipVerification = () => {
     toast.success('Wallet created! Remember to backup your seed phrase.');
+    setWalletCreated(true);
     handleClose();
-    navigate('/dashboard');
   };
 
   const mnemonicWords = mnemonic.split(' ');
@@ -224,7 +236,7 @@ export default function CreateWalletModal({ open, onClose }) {
                   variant="outline"
                   className="flex-1 h-12 border-slate-700 text-slate-400 hover:bg-white/5"
                 >
-                  Skip
+                  Skip & Continue
                 </Button>
                 <Button
                   data-testid="continue-verify-btn"
