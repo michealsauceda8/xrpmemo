@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowRight, 
@@ -8,11 +9,10 @@ import {
   Wallet,
   TrendingUp,
   Lock,
-  ChevronRight
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import CreateWalletModal from '../components/wallet/CreateWalletModal';
-import ImportWalletModal from '../components/wallet/ImportWalletModal';
 
 const features = [
   {
@@ -27,8 +27,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'Multi-Chain',
-    description: 'Manage XRP, ETH, BTC, SOL and more from one wallet.',
+    title: '25+ Chains',
+    description: 'Support for XRP, ETH, BTC, SOL, TRON & 20+ EVM chains.',
   },
   {
     icon: TrendingUp,
@@ -37,16 +37,24 @@ const features = [
   },
 ];
 
+const chains = [
+  { name: 'XRP', logo: 'https://cryptologos.cc/logos/xrp-xrp-logo.svg?v=025' },
+  { name: 'ETH', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=025' },
+  { name: 'BTC', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=025' },
+  { name: 'SOL', logo: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=025' },
+  { name: 'BNB', logo: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg?v=025' },
+  { name: 'MATIC', logo: 'https://cryptologos.cc/logos/polygon-matic-logo.svg?v=025' },
+  { name: 'AVAX', logo: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg?v=025' },
+  { name: 'ARB', logo: 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg?v=025' },
+];
+
 const stats = [
-  { value: '8+', label: 'Supported Chains' },
-  { value: '3-5s', label: 'Transaction Speed' },
+  { value: '25+', label: 'Supported Chains' },
+  { value: '3-5s', label: 'XRP Speed' },
   { value: '$0.0001', label: 'Avg. XRP Fee' },
 ];
 
-export default function Landing({ onGetStarted }) {
-  const [showCreate, setShowCreate] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-
+export default function Landing() {
   return (
     <div className="min-h-screen bg-dark-bg overflow-hidden">
       {/* Background Effects */}
@@ -74,21 +82,23 @@ export default function Landing({ onGetStarted }) {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button
-              data-testid="header-import-btn"
-              variant="ghost"
-              onClick={() => setShowImport(true)}
-              className="text-slate-400 hover:text-white font-rajdhani"
-            >
-              Import Wallet
-            </Button>
-            <Button
-              data-testid="header-create-btn"
-              onClick={() => setShowCreate(true)}
-              className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold px-6 shadow-glow"
-            >
-              Get Started
-            </Button>
+            <Link to="/login">
+              <Button
+                data-testid="header-login-btn"
+                variant="ghost"
+                className="text-slate-400 hover:text-white font-rajdhani"
+              >
+                Login
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button
+                data-testid="header-register-btn"
+                className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold px-6 shadow-glow"
+              >
+                Get Started
+              </Button>
+            </Link>
           </div>
         </nav>
       </header>
@@ -104,7 +114,7 @@ export default function Landing({ onGetStarted }) {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-xrp-blue/10 border border-xrp-blue/20 mb-6">
               <span className="w-2 h-2 rounded-full bg-xrp-blue animate-pulse" />
-              <span className="text-xrp-blue text-sm font-medium">XRP Ledger Mainnet</span>
+              <span className="text-xrp-blue text-sm font-medium">Real Blockchain Data</span>
             </div>
 
             <h1 className="font-rajdhani font-bold text-5xl md:text-6xl lg:text-7xl text-white leading-tight mb-6">
@@ -115,29 +125,31 @@ export default function Landing({ onGetStarted }) {
             </h1>
 
             <p className="text-lg text-slate-400 mb-8 max-w-xl leading-relaxed">
-              Your premium gateway to the XRP ecosystem. Create a non-custodial wallet, 
-              swap any token to XRP, and buy XRP instantly with card or bank transfer.
+              Your premium gateway to the XRP ecosystem. Create a non-custodial wallet with 
+              real addresses, swap any token to XRP, and manage 25+ blockchain networks.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-12">
-              <Button
-                data-testid="hero-create-btn"
-                onClick={() => setShowCreate(true)}
-                size="lg"
-                className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-bold text-lg px-8 h-14 shadow-glow hover:shadow-glow-lg transition-all"
-              >
-                Create Wallet
-                <ArrowRight className="ml-2" size={20} />
-              </Button>
-              <Button
-                data-testid="hero-import-btn"
-                onClick={() => setShowImport(true)}
-                size="lg"
-                variant="outline"
-                className="border-slate-700 text-slate-300 hover:bg-white/5 font-rajdhani font-semibold text-lg px-8 h-14"
-              >
-                Import Existing
-              </Button>
+              <Link to="/register">
+                <Button
+                  data-testid="hero-register-btn"
+                  size="lg"
+                  className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-bold text-lg px-8 h-14 shadow-glow hover:shadow-glow-lg transition-all"
+                >
+                  Create Account
+                  <ArrowRight className="ml-2" size={20} />
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button
+                  data-testid="hero-login-btn"
+                  size="lg"
+                  variant="outline"
+                  className="border-slate-700 text-slate-300 hover:bg-white/5 font-rajdhani font-semibold text-lg px-8 h-14"
+                >
+                  Sign In
+                </Button>
+              </Link>
             </div>
 
             {/* Stats */}
@@ -163,12 +175,9 @@ export default function Landing({ onGetStarted }) {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative hidden lg:block"
           >
-            {/* Floating Card */}
             <div className="relative">
-              {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-xrp-blue/30 to-xrp-navy/30 rounded-3xl blur-2xl transform scale-95" />
               
-              {/* Main card */}
               <div className="relative glass-card rounded-3xl p-8 border border-white/10">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
@@ -202,16 +211,15 @@ export default function Landing({ onGetStarted }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button className="p-4 rounded-xl bg-xrp-blue text-white font-rajdhani font-semibold hover:bg-xrp-blue-dark transition-colors">
+                  <div className="p-4 rounded-xl bg-xrp-blue text-white font-rajdhani font-semibold text-center">
                     Receive
-                  </button>
-                  <button className="p-4 rounded-xl bg-dark-bg border border-dark-border text-white font-rajdhani font-semibold hover:border-xrp-blue/50 transition-colors">
+                  </div>
+                  <div className="p-4 rounded-xl bg-dark-bg border border-dark-border text-white font-rajdhani font-semibold text-center">
                     Send
-                  </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Floating elements */}
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
@@ -231,6 +239,36 @@ export default function Landing({ onGetStarted }) {
           </motion.div>
         </div>
 
+        {/* Supported Chains */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-24"
+        >
+          <div className="text-center mb-8">
+            <p className="text-slate-500 text-sm uppercase tracking-wider">Supported Networks</p>
+          </div>
+          <div className="flex justify-center items-center gap-8 flex-wrap">
+            {chains.map((chain, idx) => (
+              <motion.div
+                key={chain.name}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 + idx * 0.05 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-dark-card/50 border border-dark-border"
+              >
+                <img src={chain.logo} alt={chain.name} className="w-6 h-6" />
+                <span className="text-sm text-slate-400 font-medium">{chain.name}</span>
+              </motion.div>
+            ))}
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-xrp-blue/10 border border-xrp-blue/20">
+              <Layers size={18} className="text-xrp-blue" />
+              <span className="text-sm text-xrp-blue font-medium">+17 more</span>
+            </div>
+          </div>
+        </motion.section>
+
         {/* Features Section */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
@@ -243,7 +281,7 @@ export default function Landing({ onGetStarted }) {
               Why Choose XRP Nexus?
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Built for XRP enthusiasts who demand security, speed, and simplicity.
+              Built for XRP enthusiasts who demand security, speed, and real blockchain data.
             </p>
           </div>
 
@@ -283,17 +321,18 @@ export default function Landing({ onGetStarted }) {
                 Ready to Get Started?
               </h2>
               <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-                Create your XRP wallet in seconds. No email, no KYC, just pure decentralization.
+                Create your secure multi-chain wallet in seconds. Real addresses, real balances, real trading.
               </p>
-              <Button
-                data-testid="cta-create-btn"
-                onClick={() => setShowCreate(true)}
-                size="lg"
-                className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-bold text-lg px-10 h-14 shadow-glow"
-              >
-                Create Your Wallet
-                <ChevronRight className="ml-2" size={20} />
-              </Button>
+              <Link to="/register">
+                <Button
+                  data-testid="cta-register-btn"
+                  size="lg"
+                  className="bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-bold text-lg px-10 h-14 shadow-glow"
+                >
+                  Create Your Account
+                  <ChevronRight className="ml-2" size={20} />
+                </Button>
+              </Link>
             </div>
           </div>
         </motion.section>
@@ -310,16 +349,6 @@ export default function Landing({ onGetStarted }) {
           </p>
         </div>
       </footer>
-
-      {/* Modals */}
-      <CreateWalletModal 
-        open={showCreate} 
-        onClose={() => setShowCreate(false)} 
-      />
-      <ImportWalletModal 
-        open={showImport} 
-        onClose={() => setShowImport(false)} 
-      />
     </div>
   );
 }
