@@ -5,22 +5,18 @@ import axios from 'axios';
 import { 
   Copy, 
   Check, 
-  QrCode, 
   Send, 
   ArrowDownLeft,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
-  Eye,
-  EyeOff
+  ExternalLink
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWalletStore, CHAINS } from '../store/walletStore';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -46,7 +42,7 @@ const truncateAddress = (address, start = 8, end = 6) => {
 };
 
 export default function Wallet() {
-  const { wallets, getActiveWallet, balances, prices } = useWalletStore();
+  const { getActiveWallet, balances, prices } = useWalletStore();
   const activeWallet = getActiveWallet();
   const [expandedChains, setExpandedChains] = useState(['XRP']);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -55,7 +51,7 @@ export default function Wallet() {
   const [copiedAddress, setCopiedAddress] = useState(null);
 
   // Fetch balances
-  const { data: balanceData, isLoading } = useQuery({
+  const { data: balanceData } = useQuery({
     queryKey: ['balances', activeWallet?.id],
     queryFn: async () => {
       if (!activeWallet) return null;
@@ -77,11 +73,31 @@ export default function Wallet() {
   const currentBalances = balanceData?.balances || balances;
   const currentPrices = priceData?.prices || prices;
 
+  // Fixed copy function
   const copyToClipboard = async (address, chain) => {
-    await navigator.clipboard.writeText(address);
-    setCopiedAddress(chain);
-    toast.success('Address copied to clipboard');
-    setTimeout(() => setCopiedAddress(null), 2000);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(address);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = address;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      setCopiedAddress(chain);
+      toast.success('Address copied to clipboard!');
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast.error('Failed to copy address');
+    }
   };
 
   const toggleChain = (chainKey) => {
@@ -117,13 +133,6 @@ export default function Wallet() {
       </div>
     );
   }
-
-  // Group chains by category
-  const chainGroups = {
-    primary: ['XRP'],
-    evm: ['ETH', 'BNB', 'MATIC'],
-    other: ['SOL', 'BTC', 'LTC', 'DOGE'],
-  };
 
   return (
     <div className="space-y-6" data-testid="wallet-page">
@@ -170,13 +179,14 @@ export default function Wallet() {
             </div>
 
             <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/50 border border-dark-border mb-4">
-              <code className="flex-1 text-sm text-slate-300 font-mono truncate">
+              <code className="flex-1 text-sm text-slate-300 font-mono truncate select-all">
                 {activeWallet.addresses.XRP}
               </code>
               <button
                 data-testid="copy-xrp-address"
                 onClick={() => copyToClipboard(activeWallet.addresses.XRP, 'XRP')}
-                className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-xrp-blue transition-colors"
+                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
+                title="Copy address"
               >
                 {copiedAddress === 'XRP' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
               </button>
@@ -184,7 +194,8 @@ export default function Wallet() {
                 href={`${CHAINS.XRP.explorer}/account/${activeWallet.addresses.XRP}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-xrp-blue transition-colors"
+                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
+                title="View on explorer"
               >
                 <ExternalLink size={18} />
               </a>
@@ -259,7 +270,7 @@ export default function Wallet() {
                     >
                       <div className="px-4 pb-4 border-t border-dark-border pt-4">
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/50 border border-dark-border mb-4">
-                          <code className="flex-1 text-sm text-slate-300 font-mono truncate">
+                          <code className="flex-1 text-sm text-slate-300 font-mono truncate select-all">
                             {activeWallet.addresses[chainKey]}
                           </code>
                           <button
@@ -268,7 +279,8 @@ export default function Wallet() {
                               e.stopPropagation();
                               copyToClipboard(activeWallet.addresses[chainKey], chainKey);
                             }}
-                            className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-xrp-blue transition-colors"
+                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
+                            title="Copy address"
                           >
                             {copiedAddress === chainKey ? <Check size={18} className="text-success" /> : <Copy size={18} />}
                           </button>
@@ -329,12 +341,13 @@ export default function Wallet() {
             </div>
             <p className="text-sm text-slate-400 mb-2">Your {selectedAddress?.chain} Address</p>
             <div className="flex items-center gap-2 p-3 rounded-xl bg-dark-bg border border-dark-border w-full">
-              <code className="flex-1 text-sm text-slate-300 font-mono break-all">
+              <code className="flex-1 text-sm text-slate-300 font-mono break-all select-all">
                 {selectedAddress?.address}
               </code>
               <button
                 onClick={() => copyToClipboard(selectedAddress?.address, 'modal')}
-                className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-xrp-blue"
+                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue"
+                title="Copy address"
               >
                 {copiedAddress === 'modal' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
               </button>
@@ -367,7 +380,6 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
     }
     
     setSending(true);
-    // Simulate send - in production, sign and broadcast transaction
     await new Promise(resolve => setTimeout(resolve, 2000));
     toast.success(`Transaction submitted! (Demo mode)`);
     setSending(false);
@@ -419,7 +431,7 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
               />
               <button
                 onClick={() => setAmount(balance.toString())}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-xrp-blue hover:text-xrp-blue-light"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-xrp-blue hover:text-xrp-blue-light font-semibold"
               >
                 MAX
               </button>
