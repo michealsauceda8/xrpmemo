@@ -10,7 +10,7 @@ import {
   DollarSign,
   Info
 } from 'lucide-react';
-import { useWalletStore, CHAINS } from '../store/walletStore';
+import { useWalletStore, CHAIN_CONFIG } from '../store/walletStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
