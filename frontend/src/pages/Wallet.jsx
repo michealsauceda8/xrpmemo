@@ -73,30 +73,42 @@ export default function Wallet() {
   const currentBalances = balanceData?.balances || balances;
   const currentPrices = priceData?.prices || prices;
 
-  // Fixed copy function
+  // Fixed copy function with better fallback
   const copyToClipboard = async (address, chain) => {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      // Try modern clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(address);
-      } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = address;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        textArea.remove();
+        setCopiedAddress(chain);
+        toast.success('Address copied to clipboard!');
+        setTimeout(() => setCopiedAddress(null), 2000);
+        return;
       }
-      setCopiedAddress(chain);
-      toast.success('Address copied to clipboard!');
-      setTimeout(() => setCopiedAddress(null), 2000);
+      
+      // Fallback for non-secure contexts or older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = address;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      textArea.remove();
+      
+      if (successful) {
+        setCopiedAddress(chain);
+        toast.success('Address copied to clipboard!');
+        setTimeout(() => setCopiedAddress(null), 2000);
+      } else {
+        toast.error('Failed to copy. Please select and copy manually.');
+      }
     } catch (err) {
-      console.error('Failed to copy:', err);
-      toast.error('Failed to copy address');
+      console.error('Copy failed:', err);
+      toast.error('Failed to copy. Please select and copy manually.');
     }
   };
 
