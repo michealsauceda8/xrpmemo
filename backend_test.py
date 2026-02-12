@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 
 class XRPWalletAPITester:
-    def __init__(self, base_url="https://xrp-ledger-terminal.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://xrp-wallet-hub.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session = requests.Session()
         self.session.headers.update({'Content-Type': 'application/json'})

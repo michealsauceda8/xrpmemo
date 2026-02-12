@@ -95,10 +95,10 @@ export default function Buy() {
         url = `https://buy.moonpay.com/?currencyCode=XRP&walletAddress=${encodeURIComponent(xrpAddress)}&baseCurrencyAmount=${amount}&baseCurrencyCode=USD`;
         break;
       case 'mercuryo':
-        url = `https://exchange.mercuryo.io/?widget_id=34c04adf-d04a-42de-a4aa-609a302b24bf&currency=XRP&fiat_currency=USD&fiat_amount=${amount}&address=${encodeURIComponent(xrpAddress)}&type=buy&network=RIPPLE`;
+        url = `https://exchange.mercuryo.io/?widget_id=xrp-wallet-hub&currency=XRP&fiat_currency=USD&fiat_amount=${amount}&address=${encodeURIComponent(xrpAddress)}&type=buy&network=RIPPLE`;
         break;
       case 'transak':
-        url = `https://global.transak.com/?apiKey=a5550b99-8c19-4764-b888-7ba36ac237ea&fiatCurrency=USD&defaultFiatAmount=${amount}&cryptoCurrencyCode=XRP&walletAddress=${encodeURIComponent(xrpAddress)}&network=XRP&themeColor=00AEEF&hideMenu=true`;
+        url = `https://global.transak.com/?apiKey=xrp-wallet-hub&fiatCurrency=USD&defaultFiatAmount=${amount}&cryptoCurrencyCode=XRP&walletAddress=${encodeURIComponent(xrpAddress)}&network=XRP&themeColor=00AEEF&hideMenu=true`;
         break;
       default:
         return;
