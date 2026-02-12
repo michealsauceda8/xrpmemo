@@ -59,11 +59,19 @@ const webpackConfig = {
         vm: require.resolve('vm-browserify'),
       };
       
+      // Handle fullySpecified issue for ESM modules requiring process/browser
+      webpackConfig.module.rules.push({
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+      });
+      
       // Add ProvidePlugin for Buffer and process globals
       webpackConfig.plugins = (webpackConfig.plugins || []).concat([
         new webpack.ProvidePlugin({
           Buffer: ['buffer', 'Buffer'],
-          process: 'process/browser',
+          process: 'process/browser.js',
         }),
       ]);
 
