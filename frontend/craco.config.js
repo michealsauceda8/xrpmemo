@@ -47,6 +47,13 @@ const webpackConfig = {
       '@': path.resolve(__dirname, 'src'),
     },
     configure: (webpackConfig) => {
+      // Add polyfills for Node.js core modules (needed for crypto libraries)
+      webpackConfig.resolve.fallback = {
+        ...webpackConfig.resolve.fallback,
+        buffer: require.resolve('buffer/'),
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+      };
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
