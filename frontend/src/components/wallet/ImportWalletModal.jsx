@@ -8,8 +8,10 @@ import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useWalletStore } from '../../store/walletStore';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function ImportWalletModal({ open, onClose }) {
+  const navigate = useNavigate();
   const [walletName, setWalletName] = useState('');
   const [mnemonic, setMnemonic] = useState('');
   const [privateKey, setPrivateKey] = useState('');
@@ -51,14 +53,13 @@ export default function ImportWalletModal({ open, onClose }) {
         }
         importWallet(mnemonic, walletName || 'Imported Wallet', password);
       } else {
-        // For private key import, we'd need chain-specific handling
-        // For now, we'll show it's not fully supported
         toast.error('Private key import coming soon. Please use seed phrase.');
         return;
       }
       
       toast.success('Wallet imported successfully!');
       handleClose();
+      navigate('/dashboard');
     } catch (error) {
       toast.error(error.message || 'Failed to import wallet');
     }
