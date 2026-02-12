@@ -160,11 +160,14 @@ export function deriveXrpAddress(mnemonic) {
     const hdkey = HDKey.fromMasterSeed(Buffer.from(seed));
     const childKey = hdkey.derive("m/44'/144'/0'/0/0");
     
-    // Convert to hex seed for ripple-keypairs
-    const hexSeed = childKey.privateKey.toString('hex').toUpperCase();
+    // Use first 16 bytes of private key as entropy for ripple seed generation
+    const entropyArray = Array.from(childKey.privateKey).slice(0, 16);
     
-    // Derive keypair and address
-    const keypair = deriveKeypair(hexSeed);
+    // Generate XRP seed from entropy
+    const xrpSeed = generateSeed({ entropy: entropyArray });
+    
+    // Derive keypair from XRP seed
+    const keypair = deriveKeypair(xrpSeed);
     const address = deriveAddress(keypair.publicKey);
     
     return {
