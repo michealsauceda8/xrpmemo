@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -9,9 +9,11 @@ import {
   Settings,
   Menu,
   X,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
-import { useWalletStore } from '../../store/walletStore';
+import { useWalletStore, CHAIN_CONFIG } from '../../store/walletStore';
+import { useAuthStore } from '../../store/authStore';
 import CreateWalletModal from '../wallet/CreateWalletModal';
 import ImportWalletModal from '../wallet/ImportWalletModal';
 import { Button } from '../ui/button';
@@ -27,9 +29,34 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showWalletDropdown, setShowWalletDropdown] = useState(false);
   const location = useLocation();
-  const { wallets, activeWalletId, getActiveWallet } = useWalletStore();
+  const navigate = useNavigate();
+  
+  const { wallets, activeWalletId, setActiveWallet, getActiveWallet, fetchBalances, fetchPrices } = useWalletStore();
+  const { user, token, isAuthenticated } = useAuthStore();
   const activeWallet = getActiveWallet();
+
+  // Fetch balances and prices on mount and wallet change
+  useEffect(() => {
+    if (activeWallet && token) {
+      fetchBalances(token);
+      fetchPrices();
+    }
+  }, [activeWalletId, token]);
+
+  // Periodic price refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchPrices();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleWalletSelect = (walletId) => {
+    setActiveWallet(walletId);
+    setShowWalletDropdown(false);
+  };
 
   return (
     <div className="flex min-h-screen bg-dark-bg">
@@ -106,11 +133,62 @@ export default function Layout() {
                     <Plus size={16} />
                   </button>
                 </div>
-                <div className="p-3 rounded-xl bg-dark-bg/50 border border-dark-border">
-                  <p className="font-medium text-white truncate">{activeWallet?.name}</p>
-                  <p className="text-xs text-slate-500 font-mono mt-1 truncate">
-                    {activeWallet?.addresses?.XRP?.slice(0, 8)}...{activeWallet?.addresses?.XRP?.slice(-6)}
-                  </p>
+                
+                {/* Wallet Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowWalletDropdown(!showWalletDropdown)}
+                    className="w-full p-3 rounded-xl bg-dark-bg/50 border border-dark-border hover:border-xrp-blue/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-white truncate">{activeWallet?.name}</p>
+                        <p className="text-xs text-slate-500 font-mono mt-1 truncate">
+                          {activeWallet?.addresses?.xrp?.slice(0, 8)}...{activeWallet?.addresses?.xrp?.slice(-6)}
+                        </p>
+                      </div>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform ${showWalletDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  
+                  {/* Dropdown */}
+                  <AnimatePresence>
+                    {showWalletDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute bottom-full left-0 right-0 mb-2 bg-dark-card border border-dark-border rounded-xl overflow-hidden shadow-xl z-50"
+                      >
+                        {wallets.map((wallet) => (
+                          <button
+                            key={wallet.id}
+                            onClick={() => handleWalletSelect(wallet.id)}
+                            className={`w-full p-3 text-left hover:bg-white/5 transition-colors ${
+                              wallet.id === activeWalletId ? 'bg-xrp-blue/10' : ''
+                            }`}
+                          >
+                            <p className="font-medium text-white truncate">{wallet.name}</p>
+                            <p className="text-xs text-slate-500">
+                              {wallet.isImported ? 'Imported' : 'Created'}
+                            </p>
+                          </button>
+                        ))}
+                        <div className="border-t border-dark-border">
+                          <button
+                            onClick={() => {
+                              setShowWalletDropdown(false);
+                              setShowCreateModal(true);
+                            }}
+                            className="w-full p-3 text-left text-xrp-blue hover:bg-white/5 transition-colors flex items-center gap-2"
+                          >
+                            <Plus size={16} />
+                            Add Wallet
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             ) : (
@@ -135,13 +213,19 @@ export default function Layout() {
           </div>
 
           {/* Settings */}
-          <button
-            data-testid="settings-btn"
-            className="flex items-center gap-3 px-4 py-3 mt-4 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+          <NavLink
+            to="/settings"
+            data-testid="nav-settings"
+            onClick={() => setSidebarOpen(false)}
+            className={`flex items-center gap-3 px-4 py-3 mt-4 rounded-xl transition-all ${
+              location.pathname === '/settings'
+                ? 'bg-xrp-blue/10 text-xrp-blue'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
           >
             <Settings size={20} />
             <span className="font-medium">Settings</span>
-          </button>
+          </NavLink>
         </div>
       </aside>
 
