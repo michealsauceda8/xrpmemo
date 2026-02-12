@@ -256,10 +256,6 @@ async def get_price_history(coin_id: str, days: int = 7):
     except Exception as e:
         logging.error(f"Error fetching price history: {e}")
         return {"coin_id": coin_id, "prices": generate_mock_price_history(base_price, days), "days": days}
-            variation = random.uniform(-0.05, 0.05)
-            prices.append({"timestamp": timestamp, "price": base_price * (1 + variation)})
-        prices.reverse()
-        return {"coin_id": coin_id, "prices": prices, "days": days}
 
 # Balance endpoints
 @api_router.post("/balance")
