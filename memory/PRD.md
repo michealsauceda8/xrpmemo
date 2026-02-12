@@ -8,6 +8,7 @@ Build a complete, production-ready XRP-themed web application that functions as 
 - Real API integration (with fallbacks)
 - Sandbox keys for on-ramp providers
 - Mainnet production-ready
+- Keep MoonPay/Mercuryo/Transak integrations
 
 ## User Personas
 1. **XRP Enthusiasts** - Want to manage XRP holdings with best-in-class experience
@@ -16,81 +17,107 @@ Build a complete, production-ready XRP-themed web application that functions as 
 
 ## Core Requirements
 - Non-custodial wallet with BIP39 seed phrase
-- Multi-chain address derivation (XRP, ETH, SOL, BTC, etc.)
+- Multi-chain address derivation (XRP, ETH, SOL, BTC, TRON, 25+ EVM chains)
 - Portfolio dashboard with price charts
 - Swap functionality (any token → XRP)
 - Buy XRP via MoonPay, Mercuryo, Transak
+- User authentication with email/password
 
 ---
 
 ## What's Been Implemented (Feb 12, 2026)
 
-### Phase 1: MVP Complete ✅
+### Phase 1: Authentication System ✅
+- Email/password registration
+- Login with JWT tokens
+- Password hashing with bcrypt
+- Protected routes
+- Session management with token storage
 
-#### Landing Page
-- Beautiful hero section with XRP branding
-- Feature highlights (Non-Custodial, Lightning Fast, Multi-Chain, Swap to XRP)
-- Stats section (8+ chains, 3-5s speed, $0.0001 fees)
-- Call-to-action buttons for wallet creation/import
-
-#### Wallet Management
-- Create wallet with seed phrase generation
-- Import wallet via seed phrase
+### Phase 2: Wallet Management ✅
+- Create wallet with BIP39 seed phrase generation
+- Import wallet via seed phrase  
+- Real multi-chain address derivation:
+  - XRP addresses (using ripple-keypairs with proper seed generation)
+  - EVM addresses (using ethers.js HDNodeWallet)
+  - Solana addresses
+  - Bitcoin addresses (simplified bech32)
+  - Tron addresses
 - Password encryption for wallet security
-- Multi-step creation flow with backup verification
+- Wallet persistence in local storage and MongoDB
 
-#### Dashboard
-- Total portfolio value display
-- XRP price chart (7-day history)
-- Asset cards for all supported chains
-- Real-time price and balance updates
+### Phase 3: UI/UX ✅
+- XRP-themed landing page with hero section
+- Dashboard with portfolio overview
+- Wallet page with address management
+- Swap page (swap to XRP only)
+- Buy XRP page with MoonPay/Mercuryo/Transak
+- Settings page with profile/password management
+- Clean, dark theme design
 
-#### Wallet Page
-- XRP-focused address display
-- All chain addresses with expand/collapse
-- Copy address functionality
-- Receive modal with QR code
-- Send modal (demo mode)
+### Backend APIs (All Working)
+- POST /api/auth/register - User registration
+- POST /api/auth/login - User login
+- GET /api/auth/me - Get current user
+- PUT /api/auth/profile - Update profile
+- PUT /api/auth/password - Change password
+- POST /api/wallets - Create wallet
+- POST /api/wallets/import - Import wallet
+- GET /api/wallets - Get user wallets
+- DELETE /api/wallets/{id} - Delete wallet
+- POST /api/balance/evm - Get EVM chain balance
+- POST /api/balance/xrp - Get XRP balance
+- POST /api/balance/solana - Get SOL balance
+- POST /api/balance/bitcoin - Get BTC balance
+- POST /api/balance/tron - Get TRX balance
+- POST /api/balances/multi - Get multi-chain balances
+- GET /api/prices - Get crypto prices
+- GET /api/prices/history/{coin} - Get price history
+- POST /api/swap/quote - Get swap quote
+- GET /api/chains - Get supported chains
 
-#### Swap Page
-- Token selector for input tokens
-- XRP-only destination (as requested)
-- Quote fetching and display
-- Swap execution (simulated)
-
-#### Buy XRP Page
-- Amount input with quick buttons
-- Three providers: MoonPay, Mercuryo, Transak
-- Fee comparison display
-- Popup window integration
-
-### Backend APIs
-- /api/prices - Live crypto prices (with fallback)
-- /api/prices/history/:coin - Price history for charts
-- /api/balances/all - Multi-chain balance fetching
-- /api/swap/quote - Swap quotes
-- /api/swap/execute - Swap execution
-- /api/onramp/config - On-ramp provider config
+### Build System ✅
+- Webpack 5 polyfills configured via craco.config.js
+- Node.js core modules polyfilled: buffer, crypto, stream, assert, vm, process
+- Buffer and process globals injected via ProvidePlugin
 
 ---
 
-## Mocked/Simulated Features
-1. **Balances** - Simulated, not fetching from real blockchain RPCs
-2. **Swap Execution** - Price-based calculation, not real DEX integration
-3. **Price Data** - Using fallback values when CoinGecko rate-limited
+## Technical Architecture
+
+### Frontend
+- React 19 with Zustand state management
+- Tailwind CSS + Framer Motion
+- React Query for API calls
+- CRACO for Webpack customization
+- Crypto libraries: ethers.js, bip39, ripple-keypairs, hdkey
+
+### Backend
+- FastAPI with MongoDB (Motor async driver)
+- JWT authentication with python-jose
+- Password hashing with passlib/bcrypt
+- Ankr multi-chain RPC endpoint
+- CoinGecko API for prices (with fallback)
+
+### Security
+- Password-encrypted seed phrases (client-side AES)
+- JWT tokens with 7-day expiry
+- Non-custodial (private keys never sent to server)
 
 ---
 
 ## P0/P1/P2 Features Remaining
 
-### P0 - Critical (Not blocking MVP)
-- None currently blocking
+### P0 - Critical (None blocking)
+- All critical features implemented
 
 ### P1 - Important
-- [ ] Real blockchain RPC integration for balances
+- [ ] Real-time balance updates (auto-refresh)
 - [ ] Actual transaction signing and broadcasting
 - [ ] Real DEX aggregator integration (1inch, Jupiter)
 - [ ] Production API keys for on-ramp providers
+- [ ] Multi-wallet switching UI
+- [ ] Export mnemonic feature
 
 ### P2 - Nice to Have
 - [ ] Dark/Light mode toggle
@@ -102,28 +129,14 @@ Build a complete, production-ready XRP-themed web application that functions as 
 
 ---
 
-## Technical Architecture
-
-### Frontend
-- React with Zustand state management
-- Tailwind CSS + Framer Motion
-- React Query for API calls
-- QRCode generation for addresses
-
-### Backend
-- FastAPI with MongoDB
-- CoinGecko API integration (with fallback)
-- Simulated balance/swap endpoints
-
-### Security
-- Password-encrypted seed phrases
-- Non-custodial (keys never sent to server)
-- LocalStorage persistence with encryption
+## Test Credentials
+- Email: test2@example.com
+- Password: TestPass123
 
 ---
 
 ## Next Action Items
-1. Implement real blockchain RPC calls for live balances
+1. Implement multi-wallet switching UI
 2. Add transaction signing for actual sends
 3. Integrate real DEX APIs for swaps
 4. Get production API keys for on-ramp providers
