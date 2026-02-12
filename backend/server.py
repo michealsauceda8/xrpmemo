@@ -190,6 +190,28 @@ async def get_prices():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+def generate_mock_price_history(base_price: float, days: int = 7):
+    """Generate realistic mock price history data"""
+    import random
+    now = datetime.now(timezone.utc).timestamp() * 1000
+    prices = []
+    hours = days * 24
+    
+    # Start at a slightly different price and trend toward current
+    current_price = base_price * random.uniform(0.92, 0.98)
+    trend = (base_price - current_price) / hours
+    
+    for i in range(hours):
+        timestamp = now - ((hours - i) * 3600000)
+        # Add randomness but follow trend
+        volatility = random.uniform(-0.02, 0.02)
+        current_price = current_price + trend + (current_price * volatility)
+        current_price = max(current_price, base_price * 0.85)  # Floor
+        current_price = min(current_price, base_price * 1.15)  # Ceiling
+        prices.append({"timestamp": timestamp, "price": round(current_price, 4)})
+    
+    return prices
+
 @api_router.get("/prices/history/{coin_id}")
 async def get_price_history(coin_id: str, days: int = 7):
     """Get price history for a coin"""
@@ -205,14 +227,23 @@ async def get_price_history(coin_id: str, days: int = 7):
     }
     
     gecko_id = coin_map.get(coin_id.lower(), "ripple")
+    base_price = FALLBACK_PRICES.get(coin_id.lower(), 2.35)
     
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(
                 f"{COINGECKO_API}/coins/{gecko_id}/market_chart",
                 params={"vs_currency": "usd", "days": days}
             )
+            
+            # Check for rate limit
+            if response.status_code != 200:
+                return {"coin_id": coin_id, "prices": generate_mock_price_history(base_price, days), "days": days}
+            
             data = response.json()
+            
+            # Check for error response
+            if "status" in data or "prices" not in data:
             
             # Format data for chart
             prices = [{"timestamp": p[0], "price": p[1]} for p in data.get("prices", [])]
