@@ -1,34 +1,191 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
+  background-color: #020817;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Background texture overlay */
+.bg-texture {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('https://images.unsplash.com/photo-1660836814985-8523a0d713b5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMGN5YmVyJTIwYmxvY2tjaGFpbiUyMGJsdWUlMjBuZXR3b3JrJTIwYmFja2dyb3VuZCUyMGRhcmt8ZW58MHx8fHwxNzcwODU0MTgyfDA&ixlib=rb-4.1.0&q=85');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
 }
 
-.App-link {
-    color: #61dafb;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(0, 174, 239, 0.15);
+  border-color: rgba(0, 174, 239, 0.3);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Price change colors */
+.price-up {
+  color: #10B981;
+}
+
+.price-down {
+  color: #EF4444;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.skeleton-animate {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Custom select styling */
+.chain-select {
+  background-color: #0B1221;
+  border: 1px solid #1E293B;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #E1E1E1;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.chain-select:hover {
+  border-color: #00AEEF;
+}
+
+.chain-select:focus {
+  outline: none;
+  border-color: #00AEEF;
+  box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
+}
+
+/* Token logo styling */
+.token-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+}
+
+.token-logo-lg {
+  width: 48px;
+  height: 48px;
+}
+
+/* Number counter animation */
+.balance-number {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Provider card */
+.provider-card {
+  background: linear-gradient(180deg, rgba(11, 18, 33, 0.9) 0%, rgba(11, 18, 33, 0.7) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.provider-card:hover {
+  border-color: rgba(0, 174, 239, 0.5);
+  box-shadow: 0 0 30px rgba(0, 174, 239, 0.2);
+  transform: translateY(-4px);
+}
+
+/* Swap arrow */
+.swap-arrow {
+  background: linear-gradient(135deg, #00AEEF 0%, #002B5C 100%);
+  border-radius: 50%;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.swap-arrow:hover {
+  transform: rotate(180deg);
+}
+
+/* QR Code container */
+.qr-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  display: inline-block;
+}
+
+/* Glass morphism card */
+.glass-card {
+  background: rgba(11, 18, 33, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+}
+
+/* Navigation active state */
+.nav-link {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 70%;
+  background: #00AEEF;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Chart tooltip */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.custom-tooltip {
+  background: #0B1221 !important;
+  border: 1px solid #1E293B !important;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+/* Responsive sidebar */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Truncate address */
+.address-truncate {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
