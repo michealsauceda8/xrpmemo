@@ -147,7 +147,7 @@ export default function Buy() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-xrp-blue/20 flex items-center justify-center">
               <img 
-                src={CHAINS.XRP.logo} 
+                src={CHAIN_CONFIG.xrp.logo} 
                 alt="XRP" 
                 className="w-8 h-8"
               />
