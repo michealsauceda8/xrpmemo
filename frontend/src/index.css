@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,7 +16,14 @@
     --success: #10B981;
     --warning: #F59E0B;
     --error: #EF4444;
-    --info: #3B82F6;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
@@ -28,8 +35,14 @@ body {
     color: #E1E1E1;
 }
 
+/* XRP Themed Fonts */
 .font-rajdhani {
     font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.02em;
+}
+
+.font-orbitron {
+    font-family: 'Orbitron', sans-serif;
 }
 
 .font-mono {
@@ -38,6 +51,12 @@ body {
 
 code {
     font-family: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
+}
+
+/* Selection */
+::selection {
+    background-color: rgba(0, 174, 239, 0.3);
+    color: #fff;
 }
 
 /* XRP Glow Effects */
@@ -49,6 +68,14 @@ code {
     box-shadow: 0 0 30px rgba(0, 174, 239, 0.5);
 }
 
+.shadow-glow {
+    box-shadow: 0 0 20px -5px rgba(0, 174, 239, 0.3);
+}
+
+.shadow-glow-lg {
+    box-shadow: 0 0 40px -5px rgba(0, 174, 239, 0.5);
+}
+
 .xrp-gradient {
     background: linear-gradient(135deg, #00AEEF 0%, #002B5C 100%);
 }
@@ -56,7 +83,9 @@ code {
 .glass-card {
     background: rgba(11, 18, 33, 0.8);
     backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
 }
 
 /* Custom Scrollbar */
@@ -101,16 +130,114 @@ code {
     animation: fade-in 0.3s ease-out forwards;
 }
 
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
 /* Number counter animation */
-@keyframes count-up {
-    from { opacity: 0.5; }
-    to { opacity: 1; }
+.balance-number {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
 }
 
-.animate-count {
-    animation: count-up 0.5s ease-out;
+/* Card hover effects */
+.card-hover {
+    transition: all 0.3s ease;
 }
 
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 174, 239, 0.15);
+    border-color: rgba(0, 174, 239, 0.3);
+}
+
+/* Provider card */
+.provider-card {
+    background: linear-gradient(180deg, rgba(11, 18, 33, 0.9) 0%, rgba(11, 18, 33, 0.7) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.provider-card:hover {
+    border-color: rgba(0, 174, 239, 0.5);
+    box-shadow: 0 0 30px rgba(0, 174, 239, 0.2);
+    transform: translateY(-4px);
+}
+
+/* QR Code container */
+.qr-container {
+    background: white;
+    padding: 1rem;
+    border-radius: 1rem;
+    display: inline-block;
+}
+
+/* Navigation active state */
+.nav-link {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 70%;
+    background: #00AEEF;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Price change colors */
+.price-up {
+    color: #10B981;
+}
+
+.price-down {
+    color: #EF4444;
+}
+
+/* Gradient text */
+.gradient-text {
+    background: linear-gradient(135deg, #00AEEF 0%, #33BEF2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Radial gradient background */
+.bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 100%);
+}
+
+/* Chart tooltip */
+.recharts-tooltip-wrapper {
+    outline: none !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+}
+
+/* Tailwind CSS Variables */
 @layer base {
     :root {
         --background: 222 47% 2%;
