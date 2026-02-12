@@ -57,6 +57,7 @@ module.exports = {
       },
       fontFamily: {
         rajdhani: ["Rajdhani", "sans-serif"],
+        orbitron: ["Orbitron", "sans-serif"],
         manrope: ["Manrope", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
