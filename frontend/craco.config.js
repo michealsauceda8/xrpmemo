@@ -55,25 +55,16 @@ const webpackConfig = {
         crypto: require.resolve('crypto-browserify'),
         stream: require.resolve('stream-browserify'),
         assert: require.resolve('assert/'),
-        process: require.resolve('process/browser.js'),
         vm: require.resolve('vm-browserify'),
       };
       
-      // Handle fullySpecified issue for ESM modules requiring process/browser
+      // Handle fullySpecified issue for ESM modules
       webpackConfig.module.rules.push({
         test: /\.m?js$/,
         resolve: {
           fullySpecified: false,
         },
       });
-      
-      // Add ProvidePlugin for Buffer and process globals
-      webpackConfig.plugins = (webpackConfig.plugins || []).concat([
-        new webpack.ProvidePlugin({
-          Buffer: ['buffer', 'Buffer'],
-          process: 'process/browser.js',
-        }),
-      ]);
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
