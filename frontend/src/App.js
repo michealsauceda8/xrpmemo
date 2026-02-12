@@ -1,13 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { useAuthStore } from "./store/authStore";
 import { useWalletStore } from "./store/walletStore";
 import Layout from "./components/layout/Layout";
 import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Wallet from "./pages/Wallet";
 import Swap from "./pages/Swap";
 import Buy from "./pages/Buy";
+import Settings from "./pages/Settings";
 import "./App.css";
 
 const queryClient = new QueryClient({
@@ -20,24 +24,47 @@ const queryClient = new QueryClient({
   },
 });
 
+// Protected route wrapper
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+}
+
+// Auth route wrapper (redirect if already logged in)
+function AuthRoute({ children }) {
+  const { isAuthenticated } = useAuthStore();
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+}
+
 function AppRoutes() {
-  const { wallets } = useWalletStore();
-  const hasWallet = wallets.length > 0;
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <Routes>
-      {/* Show landing page if no wallet, otherwise redirect to dashboard */}
-      <Route 
-        path="/" 
-        element={hasWallet ? <Navigate to="/dashboard" replace /> : <Landing />} 
-      />
+      {/* Public routes */}
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />} />
       
-      {/* Protected routes - require wallet */}
-      <Route element={hasWallet ? <Layout /> : <Navigate to="/" replace />}>
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="wallet" element={<Wallet />} />
-        <Route path="swap" element={<Swap />} />
-        <Route path="buy" element={<Buy />} />
+      {/* Auth routes */}
+      <Route path="/login" element={<AuthRoute><Login /></AuthRoute>} />
+      <Route path="/register" element={<AuthRoute><Register /></AuthRoute>} />
+      
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/swap" element={<Swap />} />
+        <Route path="/buy" element={<Buy />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       
       {/* Catch all */}
