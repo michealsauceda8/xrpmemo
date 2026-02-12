@@ -1,3 +1,7 @@
+// Polyfills for crypto libraries
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@/index.css";
