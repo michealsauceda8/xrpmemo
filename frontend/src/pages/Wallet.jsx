@@ -1,7 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { 
   Copy, 
   Check, 
@@ -9,17 +7,18 @@ import {
   ArrowDownLeft,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWalletStore, CHAIN_CONFIG } from '../store/walletStore';
+import { useAuthStore } from '../store/authStore';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { toast } from 'sonner';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('en-US', {
@@ -37,78 +36,54 @@ const formatNumber = (value, decimals = 6) => {
 };
 
 const truncateAddress = (address, start = 8, end = 6) => {
-  if (!address) return '';
+  if (!address) return 'Not available';
   return `${address.slice(0, start)}...${address.slice(-end)}`;
 };
 
+// Primary chains to show first
+const PRIMARY_CHAINS = ['xrp', 'ethereum', 'bitcoin', 'solana', 'bsc', 'polygon', 'tron'];
+
 export default function Wallet() {
-  const { getActiveWallet, balances, prices } = useWalletStore();
+  const { getActiveWallet, balances, prices, fetchBalances, isLoading } = useWalletStore();
+  const { token } = useAuthStore();
   const activeWallet = getActiveWallet();
-  const [expandedChains, setExpandedChains] = useState(['XRP']);
+  const [expandedChains, setExpandedChains] = useState(['xrp']);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showReceive, setShowReceive] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch balances
-  const { data: balanceData } = useQuery({
-    queryKey: ['balances', activeWallet?.id],
-    queryFn: async () => {
-      if (!activeWallet) return null;
-      const response = await axios.post(`${API}/balances/all`, activeWallet.addresses);
-      return response.data;
-    },
-    enabled: !!activeWallet,
-  });
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchBalances(token);
+    setRefreshing(false);
+  };
 
-  // Fetch prices
-  const { data: priceData } = useQuery({
-    queryKey: ['prices'],
-    queryFn: async () => {
-      const response = await axios.get(`${API}/prices`);
-      return response.data;
-    },
-  });
-
-  const currentBalances = balanceData?.balances || balances;
-  const currentPrices = priceData?.prices || prices;
-
-  // Fixed copy function with better fallback
   const copyToClipboard = async (address, chain) => {
+    if (!address) {
+      toast.error('No address to copy');
+      return;
+    }
+    
     try {
-      // Try modern clipboard API first
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(address);
-        setCopiedAddress(chain);
-        toast.success('Address copied to clipboard!');
-        setTimeout(() => setCopiedAddress(null), 2000);
-        return;
-      }
-      
-      // Fallback for non-secure contexts or older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = address;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      textArea.setAttribute('readonly', '');
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      const successful = document.execCommand('copy');
-      textArea.remove();
-      
-      if (successful) {
-        setCopiedAddress(chain);
-        toast.success('Address copied to clipboard!');
-        setTimeout(() => setCopiedAddress(null), 2000);
       } else {
-        toast.error('Failed to copy. Please select and copy manually.');
+        const textArea = document.createElement('textarea');
+        textArea.value = address;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
       }
+      setCopiedAddress(chain);
+      toast.success('Address copied!');
+      setTimeout(() => setCopiedAddress(null), 2000);
     } catch (err) {
-      console.error('Copy failed:', err);
-      toast.error('Failed to copy. Please select and copy manually.');
+      toast.error('Failed to copy');
     }
   };
 
@@ -121,19 +96,30 @@ export default function Wallet() {
   };
 
   const openReceive = (chainKey) => {
-    setSelectedAddress({ chain: chainKey, address: activeWallet?.addresses[chainKey] });
+    const address = activeWallet?.addresses?.[chainKey];
+    setSelectedAddress({ chain: chainKey, address });
     setShowReceive(true);
   };
 
   const openSend = (chainKey) => {
-    setSelectedAddress({ chain: chainKey, address: activeWallet?.addresses[chainKey] });
+    const address = activeWallet?.addresses?.[chainKey];
+    setSelectedAddress({ chain: chainKey, address });
     setShowSend(true);
   };
 
-  const totalValue = Object.entries(currentBalances).reduce((total, [symbol, balance]) => {
-    const price = currentPrices[symbol.toLowerCase()] || 0;
-    return total + (balance * price);
-  }, 0);
+  // Calculate total value
+  const calculateTotalValue = () => {
+    let total = 0;
+    Object.entries(balances).forEach(([chain, balance]) => {
+      const config = CHAIN_CONFIG[chain];
+      if (config) {
+        const symbol = config.symbol.toLowerCase();
+        const price = prices[symbol] || 0;
+        total += balance * price;
+      }
+    });
+    return total;
+  };
 
   if (!activeWallet) {
     return (
@@ -146,12 +132,28 @@ export default function Wallet() {
     );
   }
 
+  const totalValue = calculateTotalValue();
+  const xrpConfig = CHAIN_CONFIG.xrp;
+  const xrpAddress = activeWallet.addresses?.xrp;
+  const xrpBalance = balances.xrp || 0;
+  const xrpPrice = prices.xrp || 0;
+
   return (
     <div className="space-y-6" data-testid="wallet-page">
       {/* Header */}
-      <div>
-        <h1 className="font-rajdhani text-4xl font-bold text-white">Wallet</h1>
-        <p className="text-slate-400 mt-1">{activeWallet.name}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-rajdhani text-4xl font-bold text-white">Wallet</h1>
+          <p className="text-slate-400 mt-1">{activeWallet.name}</p>
+        </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          variant="outline"
+          className="border-dark-border hover:bg-white/5"
+        >
+          {refreshing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+        </Button>
       </div>
 
       {/* Total Balance Card */}
@@ -165,7 +167,7 @@ export default function Wallet() {
       {/* XRP Section - Primary Focus */}
       <div>
         <h2 className="font-rajdhani text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <img src={CHAINS.XRP.logo} alt="XRP" className="w-6 h-6" />
+          <img src={xrpConfig.logo} alt="XRP" className="w-6 h-6" />
           XRP Ledger
         </h2>
         <Card className="glass-card border-xrp-blue/30 card-hover">
@@ -173,7 +175,7 @@ export default function Wallet() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-xrp-blue/20 flex items-center justify-center">
-                  <img src={CHAINS.XRP.logo} alt="XRP" className="w-7 h-7" />
+                  <img src={xrpConfig.logo} alt="XRP" className="w-7 h-7" />
                 </div>
                 <div>
                   <p className="font-semibold text-white">XRP</p>
@@ -182,41 +184,41 @@ export default function Wallet() {
               </div>
               <div className="text-right">
                 <p className="font-rajdhani text-2xl font-bold text-white">
-                  {formatNumber(currentBalances.XRP || 0)} XRP
+                  {formatNumber(xrpBalance)} XRP
                 </p>
                 <p className="text-sm text-slate-400">
-                  {formatCurrency((currentBalances.XRP || 0) * (currentPrices.xrp || 0))}
+                  {formatCurrency(xrpBalance * xrpPrice)}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/50 border border-dark-border mb-4">
               <code className="flex-1 text-sm text-slate-300 font-mono truncate select-all">
-                {activeWallet.addresses.XRP}
+                {xrpAddress || 'Address not derived'}
               </code>
               <button
                 data-testid="copy-xrp-address"
-                onClick={() => copyToClipboard(activeWallet.addresses.XRP, 'XRP')}
+                onClick={() => copyToClipboard(xrpAddress, 'xrp')}
                 className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
-                title="Copy address"
               >
-                {copiedAddress === 'XRP' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
+                {copiedAddress === 'xrp' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
               </button>
-              <a
-                href={`${CHAINS.XRP.explorer}/account/${activeWallet.addresses.XRP}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
-                title="View on explorer"
-              >
-                <ExternalLink size={18} />
-              </a>
+              {xrpAddress && (
+                <a
+                  href={`${xrpConfig.explorer}/account/${xrpAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
+                >
+                  <ExternalLink size={18} />
+                </a>
+              )}
             </div>
 
             <div className="flex gap-3">
               <Button
                 data-testid="receive-xrp-btn"
-                onClick={() => openReceive('XRP')}
+                onClick={() => openReceive('xrp')}
                 className="flex-1 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani"
               >
                 <ArrowDownLeft size={18} className="mr-2" />
@@ -224,7 +226,7 @@ export default function Wallet() {
               </Button>
               <Button
                 data-testid="send-xrp-btn"
-                onClick={() => openSend('XRP')}
+                onClick={() => openSend('xrp')}
                 variant="outline"
                 className="flex-1 border-slate-700 text-slate-300 hover:bg-white/5 font-rajdhani"
               >
@@ -240,9 +242,14 @@ export default function Wallet() {
       <div>
         <h2 className="font-rajdhani text-xl font-semibold text-white mb-4">Other Chains</h2>
         <div className="space-y-3">
-          {Object.entries(CHAINS).filter(([key]) => key !== 'XRP').map(([chainKey, chain]) => {
-            const balance = currentBalances[chainKey] || 0;
-            const price = currentPrices[chainKey.toLowerCase()] || 0;
+          {PRIMARY_CHAINS.filter(key => key !== 'xrp').map((chainKey) => {
+            const chain = CHAIN_CONFIG[chainKey];
+            if (!chain) return null;
+            
+            const address = activeWallet.addresses?.[chainKey];
+            const balance = balances[chainKey] || 0;
+            const symbol = chain.symbol.toLowerCase();
+            const price = prices[symbol] || 0;
             const isExpanded = expandedChains.includes(chainKey);
             
             return (
@@ -283,23 +290,20 @@ export default function Wallet() {
                       <div className="px-4 pb-4 border-t border-dark-border pt-4">
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-bg/50 border border-dark-border mb-4">
                           <code className="flex-1 text-sm text-slate-300 font-mono truncate select-all">
-                            {activeWallet.addresses[chainKey]}
+                            {address || 'Address not derived'}
                           </code>
                           <button
-                            data-testid={`copy-${chainKey.toLowerCase()}-address`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              copyToClipboard(activeWallet.addresses[chainKey], chainKey);
+                              copyToClipboard(address, chainKey);
                             }}
                             className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue transition-colors"
-                            title="Copy address"
                           >
                             {copiedAddress === chainKey ? <Check size={18} className="text-success" /> : <Copy size={18} />}
                           </button>
                         </div>
                         <div className="flex gap-3">
                           <Button
-                            data-testid={`receive-${chainKey.toLowerCase()}-btn`}
                             onClick={(e) => {
                               e.stopPropagation();
                               openReceive(chainKey);
@@ -311,7 +315,6 @@ export default function Wallet() {
                             Receive
                           </Button>
                           <Button
-                            data-testid={`send-${chainKey.toLowerCase()}-btn`}
                             onClick={(e) => {
                               e.stopPropagation();
                               openSend(chainKey);
@@ -339,31 +342,38 @@ export default function Wallet() {
         <DialogContent className="bg-dark-card border-dark-border">
           <DialogHeader>
             <DialogTitle className="font-rajdhani text-xl text-white">
-              Receive {selectedAddress?.chain}
+              Receive {CHAIN_CONFIG[selectedAddress?.chain]?.symbol || ''}
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center py-6">
-            <div className="qr-container mb-6">
-              <QRCodeSVG 
-                value={selectedAddress?.address || ''} 
-                size={200}
-                bgColor="#ffffff"
-                fgColor="#000000"
-              />
-            </div>
-            <p className="text-sm text-slate-400 mb-2">Your {selectedAddress?.chain} Address</p>
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-dark-bg border border-dark-border w-full">
-              <code className="flex-1 text-sm text-slate-300 font-mono break-all select-all">
-                {selectedAddress?.address}
-              </code>
-              <button
-                onClick={() => copyToClipboard(selectedAddress?.address, 'modal')}
-                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue"
-                title="Copy address"
-              >
-                {copiedAddress === 'modal' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
-              </button>
-            </div>
+            {selectedAddress?.address ? (
+              <>
+                <div className="qr-container mb-6">
+                  <QRCodeSVG 
+                    value={selectedAddress.address} 
+                    size={200}
+                    bgColor="#ffffff"
+                    fgColor="#000000"
+                  />
+                </div>
+                <p className="text-sm text-slate-400 mb-2">
+                  Your {CHAIN_CONFIG[selectedAddress?.chain]?.name} Address
+                </p>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-dark-bg border border-dark-border w-full">
+                  <code className="flex-1 text-sm text-slate-300 font-mono break-all select-all">
+                    {selectedAddress.address}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(selectedAddress.address, 'modal')}
+                    className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-xrp-blue"
+                  >
+                    {copiedAddress === 'modal' ? <Check size={18} className="text-success" /> : <Copy size={18} />}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-slate-400">Address not available</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -374,7 +384,7 @@ export default function Wallet() {
         onClose={() => setShowSend(false)} 
         chain={selectedAddress?.chain}
         fromAddress={selectedAddress?.address}
-        balance={currentBalances[selectedAddress?.chain] || 0}
+        balance={balances[selectedAddress?.chain] || 0}
       />
     </div>
   );
@@ -384,6 +394,7 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
   const [toAddress, setToAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [sending, setSending] = useState(false);
+  const config = CHAIN_CONFIG[chain];
 
   const handleSend = async () => {
     if (!toAddress || !amount) {
@@ -393,7 +404,7 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
     
     setSending(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
-    toast.success(`Transaction submitted! (Demo mode)`);
+    toast.info('Transaction signing not yet implemented');
     setSending(false);
     onClose();
     setToAddress('');
@@ -405,7 +416,7 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
       <DialogContent className="bg-dark-card border-dark-border">
         <DialogHeader>
           <DialogTitle className="font-rajdhani text-xl text-white">
-            Send {chain}
+            Send {config?.symbol || ''}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -415,15 +426,14 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
               <code className="text-sm text-slate-300 font-mono">
                 {truncateAddress(fromAddress, 12, 8)}
               </code>
-              <p className="text-xs text-slate-500 mt-1">Balance: {formatNumber(balance)} {chain}</p>
+              <p className="text-xs text-slate-500 mt-1">Balance: {formatNumber(balance)} {config?.symbol}</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm text-slate-400">To Address</label>
             <Input
-              data-testid="send-to-address"
-              placeholder={`Enter ${chain} address`}
+              placeholder={`Enter ${config?.symbol} address`}
               value={toAddress}
               onChange={(e) => setToAddress(e.target.value)}
               className="bg-dark-bg border-dark-border focus:border-xrp-blue h-12 font-mono"
@@ -434,7 +444,6 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
             <label className="text-sm text-slate-400">Amount</label>
             <div className="relative">
               <Input
-                data-testid="send-amount"
                 type="number"
                 placeholder="0.00"
                 value={amount}
@@ -451,12 +460,11 @@ function SendModal({ open, onClose, chain, fromAddress, balance }) {
           </div>
 
           <Button
-            data-testid="send-confirm-btn"
             onClick={handleSend}
             disabled={sending || !toAddress || !amount}
             className="w-full h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold shadow-glow"
           >
-            {sending ? 'Sending...' : `Send ${chain}`}
+            {sending ? 'Processing...' : `Send ${config?.symbol || ''}`}
           </Button>
         </div>
       </DialogContent>
