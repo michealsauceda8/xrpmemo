@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Upload, Key } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -8,10 +8,8 @@ import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useWalletStore } from '../../store/walletStore';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 export default function ImportWalletModal({ open, onClose }) {
-  const navigate = useNavigate();
   const [walletName, setWalletName] = useState('');
   const [mnemonic, setMnemonic] = useState('');
   const [privateKey, setPrivateKey] = useState('');
@@ -19,7 +17,17 @@ export default function ImportWalletModal({ open, onClose }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [importType, setImportType] = useState('seed');
-  const { importWallet } = useWalletStore();
+  const [walletImported, setWalletImported] = useState(false);
+  const { importWallet, wallets } = useWalletStore();
+
+  // Watch for wallet import and redirect
+  useEffect(() => {
+    if (walletImported && wallets.length > 0) {
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
+    }
+  }, [walletImported, wallets]);
 
   const resetState = () => {
     setWalletName('');
@@ -28,6 +36,7 @@ export default function ImportWalletModal({ open, onClose }) {
     setPassword('');
     setConfirmPassword('');
     setImportType('seed');
+    setWalletImported(false);
   };
 
   const handleClose = () => {
@@ -58,8 +67,8 @@ export default function ImportWalletModal({ open, onClose }) {
       }
       
       toast.success('Wallet imported successfully!');
+      setWalletImported(true);
       handleClose();
-      navigate('/dashboard');
     } catch (error) {
       toast.error(error.message || 'Failed to import wallet');
     }
