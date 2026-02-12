@@ -42,8 +42,8 @@ export const useWalletStore = create(
           // Generate mnemonic
           const mnemonic = generateMnemonic(12);
           
-          // Derive all addresses
-          const addresses = deriveAllAddresses(mnemonic);
+          // Derive all addresses (async)
+          const addresses = await deriveAllAddresses(mnemonic);
           
           // Encrypt mnemonic
           const encryptedMnemonic = encrypt(mnemonic, password);
