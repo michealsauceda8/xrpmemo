@@ -1,7 +1,5 @@
 import * as bip39 from 'bip39';
-import HDKey from 'hdkey';
-import { deriveKeypair, deriveAddress, generateSeed } from 'ripple-keypairs';
-import { ethers } from 'ethers';
+import { Buffer } from 'buffer';
 
 // Chain configurations with derivation paths
 export const CHAIN_CONFIG = {
@@ -139,12 +137,12 @@ export function validateMnemonic(mnemonic) {
 }
 
 // Derive EVM address from mnemonic using ethers
-export function deriveEvmAddress(mnemonic) {
+export async function deriveEvmAddress(mnemonic) {
   try {
-    // Use ethers HDNodeWallet for proper derivation
+    const { ethers } = await import('ethers');
     const wallet = ethers.HDNodeWallet.fromPhrase(mnemonic, undefined, "m/44'/60'/0'/0/0");
     return {
-      address: wallet.address.toLowerCase(),
+      address: wallet.address,
       privateKey: wallet.privateKey,
     };
   } catch (error) {
@@ -153,20 +151,19 @@ export function deriveEvmAddress(mnemonic) {
   }
 }
 
-// Derive XRP address from mnemonic
-export function deriveXrpAddress(mnemonic) {
+// Derive XRP address from mnemonic using ripple-keypairs
+export async function deriveXrpAddress(mnemonic) {
   try {
+    const { deriveKeypair, deriveAddress, generateSeed } = await import('ripple-keypairs');
+    const HDKey = (await import('hdkey')).default;
+    
     const seed = bip39.mnemonicToSeedSync(mnemonic);
     const hdkey = HDKey.fromMasterSeed(Buffer.from(seed));
     const childKey = hdkey.derive("m/44'/144'/0'/0/0");
     
     // Use first 16 bytes of private key as entropy for ripple seed generation
     const entropyArray = Array.from(childKey.privateKey).slice(0, 16);
-    
-    // Generate XRP seed from entropy
     const xrpSeed = generateSeed({ entropy: entropyArray });
-    
-    // Derive keypair from XRP seed
     const keypair = deriveKeypair(xrpSeed);
     const address = deriveAddress(keypair.publicKey);
     
@@ -181,20 +178,29 @@ export function deriveXrpAddress(mnemonic) {
   }
 }
 
-// Derive Bitcoin address (simplified - bech32 format)
-export function deriveBitcoinAddress(mnemonic) {
+// Derive Bitcoin native SegWit (bech32) address using BIP84
+export async function deriveBitcoinAddress(mnemonic) {
   try {
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
-    const hdkey = HDKey.fromMasterSeed(Buffer.from(seed));
-    const childKey = hdkey.derive("m/84'/0'/0'/0/0");
+    const bitcoin = await import('bitcoinjs-lib');
+    const ecc = await import('tiny-secp256k1');
+    const { BIP32Factory } = await import('bip32');
     
-    // Create a simplified bech32-style address from public key hash
-    const pubKeyHex = childKey.publicKey.toString('hex');
-    const address = 'bc1q' + pubKeyHex.slice(0, 38).toLowerCase();
+    const bip32 = BIP32Factory(ecc);
+    const seed = bip39.mnemonicToSeedSync(mnemonic);
+    const root = bip32.fromSeed(seed);
+    
+    // BIP84 path for native SegWit: m/84'/0'/0'/0/0
+    const child = root.derivePath("m/84'/0'/0'/0/0");
+    
+    // Generate native SegWit P2WPKH address
+    const { address } = bitcoin.payments.p2wpkh({
+      pubkey: child.publicKey,
+      network: bitcoin.networks.bitcoin
+    });
     
     return {
       address,
-      privateKey: childKey.privateKey.toString('hex'),
+      privateKey: child.privateKey.toString('hex'),
     };
   } catch (error) {
     console.error('Bitcoin derivation error:', error);
@@ -202,16 +208,24 @@ export function deriveBitcoinAddress(mnemonic) {
   }
 }
 
-// Derive Solana address (simplified)
-export function deriveSolanaAddress(mnemonic) {
+// Derive Solana address using ed25519
+export async function deriveSolanaAddress(mnemonic) {
   try {
+    const { Keypair } = await import('@solana/web3.js');
+    const { derivePath } = await import('ed25519-hd-key');
+    
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    // Use first 32 bytes for ed25519
-    const address = Buffer.from(seed.slice(0, 32)).toString('base64').replace(/[+/=]/g, '').slice(0, 44);
+    
+    // Solana BIP44 path: m/44'/501'/0'/0'
+    const path = "m/44'/501'/0'/0'";
+    const { key: derivedSeed } = derivePath(path, seed.toString('hex'));
+    
+    // Create Solana keypair from derived seed
+    const keypair = Keypair.fromSeed(derivedSeed.slice(0, 32));
     
     return {
-      address,
-      privateKey: seed.slice(0, 32).toString('hex'),
+      address: keypair.publicKey.toBase58(),
+      privateKey: Buffer.from(keypair.secretKey).toString('hex'),
     };
   } catch (error) {
     console.error('Solana derivation error:', error);
@@ -219,16 +233,17 @@ export function deriveSolanaAddress(mnemonic) {
   }
 }
 
-// Derive Tron address (uses same as EVM with T prefix)
-export function deriveTronAddress(mnemonic) {
+// Derive Tron address using TronWeb
+export async function deriveTronAddress(mnemonic) {
   try {
-    const evmResult = deriveEvmAddress(mnemonic);
-    // Tron addresses are EVM addresses with T prefix encoding
-    const address = 'T' + evmResult.address.slice(2, 35);
+    const TronWeb = (await import('tronweb')).default;
+    
+    // TronWeb.fromMnemonic derives using BIP44 path m/44'/195'/0'/0/0
+    const result = TronWeb.fromMnemonic(mnemonic, "m/44'/195'/0'/0/0");
     
     return {
-      address,
-      privateKey: evmResult.privateKey,
+      address: result.address.base58,
+      privateKey: result.privateKey,
     };
   } catch (error) {
     console.error('Tron derivation error:', error);
@@ -236,13 +251,13 @@ export function deriveTronAddress(mnemonic) {
   }
 }
 
-// Derive all addresses from mnemonic
-export function deriveAllAddresses(mnemonic) {
+// Derive all addresses from mnemonic (async version)
+export async function deriveAllAddresses(mnemonic) {
   const addresses = {};
   
   // Derive XRP address
   try {
-    const xrp = deriveXrpAddress(mnemonic);
+    const xrp = await deriveXrpAddress(mnemonic);
     addresses.xrp = xrp.address;
   } catch (e) {
     console.error('Failed to derive XRP address:', e);
@@ -250,7 +265,7 @@ export function deriveAllAddresses(mnemonic) {
   
   // Derive EVM address (used for all EVM chains)
   try {
-    const evm = deriveEvmAddress(mnemonic);
+    const evm = await deriveEvmAddress(mnemonic);
     
     // Apply same address to all EVM chains
     Object.keys(CHAIN_CONFIG).forEach((chainId) => {
@@ -265,7 +280,7 @@ export function deriveAllAddresses(mnemonic) {
   
   // Derive Solana address
   try {
-    const sol = deriveSolanaAddress(mnemonic);
+    const sol = await deriveSolanaAddress(mnemonic);
     addresses.solana = sol.address;
   } catch (e) {
     console.error('Failed to derive Solana address:', e);
@@ -273,7 +288,7 @@ export function deriveAllAddresses(mnemonic) {
   
   // Derive Bitcoin address
   try {
-    const btc = deriveBitcoinAddress(mnemonic);
+    const btc = await deriveBitcoinAddress(mnemonic);
     addresses.bitcoin = btc.address;
   } catch (e) {
     console.error('Failed to derive Bitcoin address:', e);
@@ -281,7 +296,7 @@ export function deriveAllAddresses(mnemonic) {
   
   // Derive Tron address
   try {
-    const trx = deriveTronAddress(mnemonic);
+    const trx = await deriveTronAddress(mnemonic);
     addresses.tron = trx.address;
   } catch (e) {
     console.error('Failed to derive Tron address:', e);
