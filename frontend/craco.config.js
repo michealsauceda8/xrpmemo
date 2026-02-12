@@ -58,13 +58,7 @@ const webpackConfig = {
         process: require.resolve('process/browser'),
       };
       
-      // Add plugins for global polyfills
-      webpackConfig.plugins.push(
-        new webpack.ProvidePlugin({
-          Buffer: ['buffer', 'Buffer'],
-          process: 'process/browser',
-        })
-      );
+      // Note: ProvidePlugin removed as it was causing conflicts
 
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
