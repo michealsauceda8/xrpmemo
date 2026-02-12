@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Upload, Key } from 'lucide-react';
+import { Eye, EyeOff, Upload, Key, Loader2, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useWalletStore } from '../../store/walletStore';
+import { useAuthStore } from '../../store/authStore';
+import { validateMnemonic } from '../../lib/wallet';
 import { toast } from 'sonner';
 
 export default function ImportWalletModal({ open, onClose }) {
@@ -17,17 +19,10 @@ export default function ImportWalletModal({ open, onClose }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [importType, setImportType] = useState('seed');
-  const [walletImported, setWalletImported] = useState(false);
-  const { importWallet, wallets } = useWalletStore();
-
-  // Watch for wallet import and redirect
-  useEffect(() => {
-    if (walletImported && wallets.length > 0) {
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 100);
-    }
-  }, [walletImported, wallets]);
+  const [isImporting, setIsImporting] = useState(false);
+  
+  const { importWallet } = useWalletStore();
+  const { token } = useAuthStore();
 
   const resetState = () => {
     setWalletName('');
@@ -36,7 +31,7 @@ export default function ImportWalletModal({ open, onClose }) {
     setPassword('');
     setConfirmPassword('');
     setImportType('seed');
-    setWalletImported(false);
+    setIsImporting(false);
   };
 
   const handleClose = () => {
@@ -44,7 +39,7 @@ export default function ImportWalletModal({ open, onClose }) {
     onClose();
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -54,23 +49,34 @@ export default function ImportWalletModal({ open, onClose }) {
       return;
     }
 
+    setIsImporting(true);
+
     try {
       if (importType === 'seed') {
         if (!mnemonic.trim()) {
           toast.error('Please enter your seed phrase');
+          setIsImporting(false);
           return;
         }
-        importWallet(mnemonic, walletName || 'Imported Wallet', password);
+        
+        // Validate mnemonic
+        const trimmed = mnemonic.trim().toLowerCase();
+        if (!validateMnemonic(trimmed)) {
+          toast.error('Invalid seed phrase. Please check and try again.');
+          setIsImporting(false);
+          return;
+        }
+        
+        await importWallet(trimmed, walletName || 'Imported Wallet', password, token);
+        toast.success('Wallet imported with real addresses!');
+        handleClose();
       } else {
         toast.error('Private key import coming soon. Please use seed phrase.');
-        return;
+        setIsImporting(false);
       }
-      
-      toast.success('Wallet imported successfully!');
-      setWalletImported(true);
-      handleClose();
     } catch (error) {
       toast.error(error.message || 'Failed to import wallet');
+      setIsImporting(false);
     }
   };
 
@@ -88,6 +94,16 @@ export default function ImportWalletModal({ open, onClose }) {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6 py-4"
         >
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-warning/10 border border-warning/30">
+            <AlertTriangle className="text-warning shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="text-warning font-medium text-sm">Security Notice</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Never share your seed phrase. We will derive real blockchain addresses from it.
+              </p>
+            </div>
+          </div>
+
           <Tabs value={importType} onValueChange={setImportType} className="w-full">
             <TabsList className="w-full bg-dark-bg border border-dark-border">
               <TabsTrigger 
@@ -108,17 +124,14 @@ export default function ImportWalletModal({ open, onClose }) {
 
             <TabsContent value="seed" className="mt-4 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm text-slate-400">Seed Phrase</label>
+                <label className="text-sm text-slate-400">Seed Phrase (12 or 24 words)</label>
                 <Textarea
                   data-testid="import-mnemonic-input"
-                  placeholder="Enter your 12 or 24 word seed phrase"
+                  placeholder="Enter your seed phrase words separated by spaces"
                   value={mnemonic}
                   onChange={(e) => setMnemonic(e.target.value)}
                   className="bg-dark-bg border-dark-border focus:border-xrp-blue min-h-[100px] font-mono text-sm"
                 />
-                <p className="text-xs text-slate-500">
-                  Separate words with spaces
-                </p>
               </div>
             </TabsContent>
 
@@ -133,12 +146,13 @@ export default function ImportWalletModal({ open, onClose }) {
                   onChange={(e) => setPrivateKey(e.target.value)}
                   className="bg-dark-bg border-dark-border focus:border-xrp-blue h-12 font-mono"
                 />
+                <p className="text-xs text-slate-500">Coming soon - use seed phrase for now</p>
               </div>
             </TabsContent>
           </Tabs>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">Wallet Name (Optional)</label>
+            <label className="text-sm text-slate-400">Wallet Name</label>
             <Input
               data-testid="import-wallet-name"
               placeholder="Imported Wallet"
@@ -149,7 +163,7 @@ export default function ImportWalletModal({ open, onClose }) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-slate-400">New Password</label>
+            <label className="text-sm text-slate-400">Encryption Password</label>
             <div className="relative">
               <Input
                 data-testid="import-password-input"
@@ -184,10 +198,17 @@ export default function ImportWalletModal({ open, onClose }) {
           <Button
             data-testid="import-wallet-submit"
             onClick={handleImport}
-            disabled={(!mnemonic && !privateKey) || !password || !confirmPassword}
+            disabled={(!mnemonic && !privateKey) || !password || !confirmPassword || isImporting}
             className="w-full h-12 bg-xrp-blue hover:bg-xrp-blue-dark text-white font-rajdhani font-semibold text-lg shadow-glow"
           >
-            Import Wallet
+            {isImporting ? (
+              <>
+                <Loader2 size={18} className="mr-2 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              'Import Wallet'
+            )}
           </Button>
         </motion.div>
       </DialogContent>
