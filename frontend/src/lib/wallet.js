@@ -1,6 +1,6 @@
 import * as bip39 from 'bip39';
 import HDKey from 'hdkey';
-import { deriveKeypair, deriveAddress } from 'ripple-keypairs';
+import { deriveKeypair, deriveAddress, generateSeed } from 'ripple-keypairs';
 import { ethers } from 'ethers';
 
 // Chain configurations with derivation paths
